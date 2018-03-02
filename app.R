@@ -23,6 +23,7 @@ initial.plot.types <- unique(initial.dt$Type)
 ui <- dashboardPage(
   dashboardHeader(),
   dashboardSidebar(
+    selectInput("run", "Select Run Report", all.runs.dt$name, selected = tail(all.runs.dt$name, n = 1)),
     selectInput("study", "Select Study", all.studies, selected = initial.study),
     sliderInput("slider.coverage", "Coverage", 0, initial.coverage.max, value = c(0, initial.coverage.max)),
     checkboxGroupInput(
@@ -39,6 +40,15 @@ ui <- dashboardPage(
 )
 
 server <- function(session, input, output) { 
+  observeEvent(input$run, {
+    print(input$run)
+    current.run <<- createAppDT(all.runs.dt[name == input$run, path])
+      
+    all.studies <- names(current.run)
+    print(all.studies)
+    updateSelectInput(session, "study", choices = all.studies)
+  })
+  
   observeEvent(input$study, {
     selected.study <- current.run[[input$study]]
     single.study.type <- split(selected.study, by = "Type")
