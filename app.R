@@ -1,4 +1,5 @@
 source("./utility.R")
+source("./list_reports.R")
 library(ggplot2)
 library(plotly)
 library(data.table)
@@ -13,7 +14,9 @@ library(data.table)
 
 library(shiny)
 
-single.run <- readSeqWareTSV("./170203_D00343_0160_ACACFLANXX_report.tsv")
+
+all.runs.dt <- listRunReports()
+single.run <- readSeqWareTSV(all.runs.dt[nrow(all.runs.dt), path])
 single.run <- fixSeqWareTSV(single.run)
 
 single.run.split <- createLong(single.run)
