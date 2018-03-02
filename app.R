@@ -3,16 +3,9 @@ source("./list_reports.R")
 library(ggplot2)
 library(plotly)
 library(data.table)
-#
-# This is a Shiny web application. You can run the application by clicking
-# the 'Run App' button above.
-#
-# Find out more about building applications with Shiny here:
-#
-#    http://shiny.rstudio.com/
-#
-
 library(shiny)
+library(shinydashboard)
+
 
 
 all.runs.dt <- listRunReports()
@@ -32,47 +25,23 @@ initial.lib <- single.run[Study == initial.study, "Library"][[1]]
 initial.coverage.max <- max(single.run[Study == initial.study, "Coverage"])
 initial.plot.types <- unique(single.run.split$Type)
 
-# Define UI for application that draws the plot
-ui <- fillPage(
-  fillCol(
-    # sidebarLayout(
-    #  sidebarPanel(
-    #    selectInput("study", "Select Study", unique(single.run$Study)),
-    #    checkboxGroupInput("library", "Select Library", single.run$Library)
-    #  ),
-    #  mainPanel(
-    #    div(style='min-height:100px; overflow-y: scroll',
-    #        plotlyOutput("gecco", height = "100%")
-    #    )
-    #    )
-    # )
-    fillRow(
-      fillCol(
-        selectInput("study", "Select Study", unique(single.run$Study), selected = initial.study)
-        #actionButton("selectAllLib", "All Libraries"),
-        #actionButton("removeAllLib", "No Libraries"),
-        #actionButton("updateLib", "Update Libraries")
-      ),
-      #div(style='height:200px; overflow-y: scroll',
-      #checkboxGroupInput("library", "Select Library", initial.lib, selected = initial.lib)
-      #)
-      sliderInput("slider.coverage", "Coverage", 0, initial.coverage.max, value = c(0, initial.coverage.max)),
-      div(
-        style='height:200px; overflow-y: scroll',
-        checkboxGroupInput(
-          "check.type", "Select Plots", initial.plot.types, 
-          selected = c("Coverage", "PF Reads", "Map Percent", "Reads/SP", "Percent mapped on Target", "Insert Size")
-        )
-      )
-    ),
-    plotlyOutput("gecco", height = "100%"),
-    
-    flex = c(2, 8)
+ui <- dashboardPage(
+  dashboardHeader(),
+  dashboardSidebar(
+    selectInput("study", "Select Study", unique(single.run$Study), selected = initial.study),
+    sliderInput("slider.coverage", "Coverage", 0, initial.coverage.max, value = c(0, initial.coverage.max)),
+    checkboxGroupInput(
+      "check.type", "Select Plots", initial.plot.types, 
+      selected = c("Coverage", "PF Reads", "Map Percent", "Reads/SP", "Percent mapped on Target", "Insert Size")
+    )
+  ),
+  dashboardBody(
+    tags$style(type = "text/css", "#gecco {height: calc(100vh - 80px) !important;}"),
+    plotlyOutput("gecco", height = "100%")
   )
-) 
+)
 
-# Define server logic required to draw plot
-server <- function(input, output, session) {
+server <- function(session, input, output) { 
   observeEvent(input$study, {
     selected.study <- single.run.study[[input$study]]
     single.study.type <- split(selected.study, by = "Type")
@@ -120,9 +89,8 @@ server <- function(input, output, session) {
     two.columns <- ceiling(length(input$check.type) / 2)
     nrows <- ifelse(length(input$check.type) > 10, two.columns, length(input$check.type))
     subplot(plots.all, nrows = nrows, titleY = TRUE)
-  })
+  })  
 }
 
-# Run the application 
-shinyApp(ui = ui, server = server)
+shinyApp(ui, server)
 
