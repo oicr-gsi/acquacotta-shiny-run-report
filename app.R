@@ -8,27 +8,22 @@ library(shinydashboard)
 
 
 
+
+
 all.runs.dt <- listRunReports()
-single.run <- readSeqWareTSV(all.runs.dt[nrow(all.runs.dt), path])
-single.run <- fixSeqWareTSV(single.run)
 
-single.run.split <- createLong(single.run)
-set(single.run.split, j = "Lane", value = factor(single.run.split$Lane, levels = 1:8, ordered = TRUE))
-setorder(single.run.split, Lane, -Coverage)
-set(single.run.split, j = "Library", value = factor(single.run.split$Library, levels = unique(single.run.split$Library, ordered = TRUE)))
+current.run <- createAppDT(all.runs.dt[nrow(all.runs.dt), path])
 
-single.run.study <- split(single.run.split, by = "Study")
-
-all.studies <- unique(single.run$Study)
+all.studies <- names(current.run)
 initial.study <- all.studies[[1]]
-initial.lib <- single.run[Study == initial.study, "Library"][[1]]
-initial.coverage.max <- max(single.run[Study == initial.study, "Coverage"])
-initial.plot.types <- unique(single.run.split$Type)
+initial.dt <- current.run[[initial.study]]
+initial.coverage.max <- max(initial.dt[, "Coverage"])
+initial.plot.types <- unique(initial.dt$Type)
 
 ui <- dashboardPage(
   dashboardHeader(),
   dashboardSidebar(
-    selectInput("study", "Select Study", unique(single.run$Study), selected = initial.study),
+    selectInput("study", "Select Study", all.studies, selected = initial.study),
     sliderInput("slider.coverage", "Coverage", 0, initial.coverage.max, value = c(0, initial.coverage.max)),
     checkboxGroupInput(
       "check.type", "Select Plots", initial.plot.types, 
@@ -36,14 +31,16 @@ ui <- dashboardPage(
     )
   ),
   dashboardBody(
-    tags$style(type = "text/css", "#gecco {height: calc(100vh - 80px) !important;}"),
-    plotlyOutput("gecco", height = "100%")
+    # The css selector allows for the plot to be full height: https://stackoverflow.com/questions/36469631/how-to-get-leaflet-for-r-use-100-of-shiny-dashboard-height
+    tags$style(type = "text/css", "#plot {height: calc(100vh - 80px) !important;}"),
+    # The css selector and the id of plotlyOutput must match
+    plotlyOutput("plot", height = "100%")
   )
 )
 
 server <- function(session, input, output) { 
   observeEvent(input$study, {
-    selected.study <- single.run.study[[input$study]]
+    selected.study <- current.run[[input$study]]
     single.study.type <- split(selected.study, by = "Type")
     
     coverage.max <- max(selected.study[, "Coverage"])
@@ -51,7 +48,7 @@ server <- function(session, input, output) {
   })
   
   dt.to.plot <- reactive({
-    selected.study <- single.run.study[[input$study]]
+    selected.study <- current.run[[input$study]]
     selected.coverage <- input$slider.coverage
     selected.study <- selected.study[Coverage >= selected.coverage[1] & Coverage <= selected.coverage[2],]
     
@@ -61,7 +58,7 @@ server <- function(session, input, output) {
     return(selected.study[type.to.keep])
   })
   
-  output$gecco <- renderPlotly({
+  output$plot <- renderPlotly({
     temp.to.plot <- dt.to.plot()
     
     # Removes the cryptic error message if the parameters are such that there are no data points to print

@@ -51,6 +51,13 @@ createLong <- function(t.df) {
   set(epic.dt.coverage, j = "Type", value = rep("Coverage", nrow(epic.dt.coverage)))
   
   epic.dt.long <- rbindlist(list(epic.dt.coverage, epic.dt.long))
+  
+  # Make Lanes a factor rather than number and sort by lane and then by coverage
+  set(epic.dt.long, j = "Lane", value = factor(epic.dt.long$Lane, levels = 1:8, ordered = TRUE))
+  setorder(epic.dt.long, Lane, -Coverage)
+  
+  # Libraries should also be factors rather than strings
+  set(epic.dt.long, j = "Library", value = factor(epic.dt.long$Library, levels = unique(epic.dt.long$Library, ordered = TRUE)))
   return(epic.dt.long)
 }
 
@@ -59,4 +66,13 @@ createLong <- function(t.df) {
 readSeqWareTSV <- function(path) {
   dt <- fread(path)
   set(dt, j = "Run Name", value = factor(rep(path, nrow(dt))))
+}
+
+# The data table that will be used throughout the app, starting from the path to the Run Report
+createAppDT <- function(path) {
+  current.run <- readSeqWareTSV(path)
+  current.run <- fixSeqWareTSV(current.run)
+  current.run <- createLong(current.run)
+  current.run <- split(current.run, by = "Study")
+  return(current.run)
 }
