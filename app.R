@@ -61,6 +61,15 @@ server <- function(session, input, output) {
     req(input$study)
 
     selected.study <- current.run[[input$study]]
+    lane.levels <- sort(unique(selected.study$Lane))
+    
+    # Make Lanes a factor rather than number and sort by lane and then by coverage
+    set(selected.study, j = "Lane", value = factor(selected.study$Lane, levels = lane.levels, ordered = TRUE))
+    setorder(selected.study, Lane, -Coverage)
+    
+    # Libraries should also be factors rather than strings
+    set(selected.study, j = "Library", value = factor(selected.study$Library, levels = unique(selected.study$Library, ordered = TRUE)))
+    
     selected.coverage <- input$slider.coverage
     selected.study <- selected.study[Coverage >= selected.coverage[1] & Coverage <= selected.coverage[2],]
     

@@ -52,12 +52,6 @@ createLong <- function(t.df) {
   
   epic.dt.long <- rbindlist(list(epic.dt.coverage, epic.dt.long))
   
-  # Make Lanes a factor rather than number and sort by lane and then by coverage
-  set(epic.dt.long, j = "Lane", value = factor(epic.dt.long$Lane, levels = 1:8, ordered = TRUE))
-  setorder(epic.dt.long, Lane, -Coverage)
-  
-  # Libraries should also be factors rather than strings
-  set(epic.dt.long, j = "Library", value = factor(epic.dt.long$Library, levels = unique(epic.dt.long$Library, ordered = TRUE)))
   return(epic.dt.long)
 }
 
