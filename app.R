@@ -25,16 +25,23 @@ ui <- dashboardPage(
   dashboardHeader(),
   dashboardSidebar(
     selectInput("run", "Select Run Report", all.runs.dt$name, selected = current.dt$name),
+    
     selectInput("study", "Select Study", all.studies, selected = initial.study),
+    
     sliderInput("slider.coverage", "Coverage", 0, initial.coverage.max, value = c(0, initial.coverage.max)),
+    
     checkboxGroupInput(
       "check.type", "Select Plots", initial.plot.types, 
       selected = c("Coverage", "PF Reads", "Map Percent", "Reads/SP", "Percent mapped on Target", "Insert Size")
     )
   ),
+  
   dashboardBody(
     # The css selector allows for the plot to be full height: https://stackoverflow.com/questions/36469631/how-to-get-leaflet-for-r-use-100-of-shiny-dashboard-height
     tags$style(type = "text/css", "#plot {height: calc(100vh - 80px) !important;}"),
+    
+    verbatimTextOutput("error_run"),
+    
     # The css selector and the id of plotlyOutput must match
     plotlyOutput("plot", height = "100%")
   )
@@ -42,10 +49,16 @@ ui <- dashboardPage(
 
 server <- function(session, input, output) {
   observeEvent(input$run, {
-    current.run <<- createAppDT(all.runs.dt[name == input$run, path])
-      
-    all.studies <- names(current.run)
-    updateSelectInput(session, "study", choices = all.studies)
+    tryCatch({
+      output$error_run <- renderPrint(invisible())
+      current.run <<- createAppDT(all.runs.dt[name == input$run, path])
+      all.studies <- names(current.run)
+      updateSelectInput(session, "study", choices = all.studies)
+    }, error = function(err) {
+      current.run <<- NULL
+      err.msg <- paste("Failed to read Run Report TSV file for the following reason:", conditionMessage(err), sep = "\n")
+      output$error_run <- renderText(err.msg)
+    })
   })
   
   observeEvent(c(input$run, input$study), {

@@ -57,9 +57,16 @@ createLong <- function(t.df) {
 
 # This function loads the file and adds a column with the path
 # This is necessary as the TSV file itself does not tell you which run it came from
+# Any warning is thrown as an error, as fread tries its best to read even nonstandard files
 readSeqWareTSV <- function(path) {
-  dt <- fread(path)
-  set(dt, j = "Run Name", value = factor(rep(path, nrow(dt))))
+  tryCatch({
+    
+    dt <- fread(path, sep = "\t", header = TRUE)
+    set(dt, j = "Run Name", value = factor(rep(path, nrow(dt))))
+    
+  }, warning = function(w) {
+    stop(simpleError(conditionMessage(w)))
+  })
 }
 
 # The data table that will be used throughout the app, starting from the path to the Run Report
