@@ -50,6 +50,8 @@ server <- function(session, input, output) {
   
   observeEvent(c(input$run, input$study), {
     selected.study <- current.run[[input$study]]
+    req(selected.study)
+    
     single.study.type <- split(selected.study, by = "Type")
     
     coverage.max <- max(selected.study[, "Coverage"])
@@ -58,9 +60,10 @@ server <- function(session, input, output) {
   
   dt.to.plot <- reactive({
     req(input$run)
-    req(input$study)
 
     selected.study <- current.run[[input$study]]
+    req(selected.study)
+    
     lane.levels <- sort(unique(selected.study$Lane))
     
     # Make Lanes a factor rather than number and sort by lane and then by coverage
