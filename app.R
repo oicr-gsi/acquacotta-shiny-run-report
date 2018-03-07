@@ -1,38 +1,31 @@
 source("./utility.R")
 source("./list_reports.R")
+
 library(ggplot2)
 library(plotly)
 library(data.table)
 library(shiny)
 library(shinydashboard)
 
-
-
-
-
+# A data table that contains the paths and display names of the available Run Reports
 all.runs.dt <- listRunReports()
+
+# This is the Run Report that will be displayed by the application
+# This global variable is polled by various functions and is updated when user selects different Run Reports
+# At startup this is the most recent Run Report
 current.dt <- all.runs.dt[nrow(all.runs.dt), ]
-
-current.run <- createAppDT(current.dt$path)
-
-all.studies <- names(current.run)
-initial.study <- all.studies[[1]]
-initial.dt <- current.run[[initial.study]]
-initial.coverage.max <- max(initial.dt[, "Coverage"])
-initial.plot.types <- unique(initial.dt$Type)
 
 ui <- dashboardPage(
   dashboardHeader(),
   dashboardSidebar(
-    selectInput("run", "Select Run Report", all.runs.dt$name, selected = current.dt$name),
+    selectInput("run", "Select Run Report", sort(all.runs.dt$name, decreasing = TRUE)),
     
-    selectInput("study", "Select Study", all.studies, selected = initial.study),
+    selectInput("study", "Select Study", c()),
     
-    sliderInput("slider.coverage", "Coverage", 0, initial.coverage.max, value = c(0, initial.coverage.max)),
+    sliderInput("slider.coverage", "Coverage", 0, 0, value = c(0, 0)),
     
     checkboxGroupInput(
-      "check.type", "Select Plots", initial.plot.types, 
-      selected = c("Coverage", "PF Reads", "Map Percent", "Reads/SP", "Percent mapped on Target", "Insert Size")
+      "check.type", "Select Plots", c()
     )
   ),
   
@@ -48,33 +41,42 @@ ui <- dashboardPage(
 )
 
 server <- function(session, input, output) {
+  current.run <- reactiveVal(NULL)
+  
   observeEvent(input$run, {
     tryCatch({
       output$error_run <- renderPrint(invisible())
-      current.run <<- createAppDT(all.runs.dt[name == input$run, path])
-      all.studies <- names(current.run)
+      current.run(createAppDT(all.runs.dt[name == input$run, path]))
+      all.studies <- names(current.run())
       updateSelectInput(session, "study", choices = all.studies)
     }, error = function(err) {
-      current.run <<- NULL
+      current.run(NULL)
       err.msg <- paste("Failed to read Run Report TSV file for the following reason:", conditionMessage(err), sep = "\n")
       output$error_run <- renderText(err.msg)
     })
   })
   
   observeEvent(c(input$run, input$study), {
-    selected.study <- current.run[[input$study]]
+    selected.study <- current.run()[[input$study]]
     req(selected.study)
-    
-    single.study.type <- split(selected.study, by = "Type")
     
     coverage.max <- max(selected.study[, "Coverage"])
     updateSliderInput(session, "slider.coverage", max = coverage.max, value = c(0, coverage.max))
+    
+    if (length(input$check.type) == 0) {
+      study.types <- unique(selected.study$Type)
+      updateCheckboxGroupInput(
+        session, 'check.type', choices = study.types,
+        selected = c("Coverage", "PF Reads", "Map Percent", "Reads/SP", "Percent mapped on Target", "Insert Size")
+      )
+    }
   })
   
   dt.to.plot <- reactive({
     req(input$run)
+    req(input$check.type)
 
-    selected.study <- current.run[[input$study]]
+    selected.study <- current.run()[[input$study]]
     req(selected.study)
     
     lane.levels <- sort(unique(selected.study$Lane))
@@ -96,10 +98,13 @@ server <- function(session, input, output) {
   })
   
   output$plot <- renderPlotly({
+    req(input$check.type)
+    
     temp.to.plot <- dt.to.plot()
     req(temp.to.plot)
 
     # Removes the cryptic error message if the parameters are such that there are no data points to print
+    # This is not caught by the req call because the temp.to.plot has elements, but all the elements are empty
     anything.to.print <- all(sapply(temp.to.plot, nrow))
     if(!anything.to.print) {
       return(NULL)
