@@ -10,7 +10,7 @@ listRunReports <- function() {
   dt <- data.table(path = path, file = file, name = name)
   
   if (nrow(dt) != length(unique(dt$name))) {
-    stop("Duplicated run report names were found")
+    stop(simpleError("Duplicated run report names were found"))
   }
   
   return(dt)

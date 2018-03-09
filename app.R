@@ -6,10 +6,6 @@ library(data.table)
 library(shiny)
 library(shinydashboard)
 
-# A data table that contains the paths and display names of the available Run Reports
-# The Run Reports should be ordered from oldest to newest
-all.runs.dt <- listRunReports()
-
 # The UI
 ui <- dashboardPage(
   dashboardHeader(),
@@ -18,7 +14,7 @@ ui <- dashboardPage(
   dashboardSidebar(
     # Select Run Report
     # Note that this assumes the oldest to newest ordering and displays the newest Run Report
-    selectInput("run", "Select Run Report", sort(all.runs.dt$name, decreasing = TRUE)),
+    selectInput("run", "Select Run Report", c()),
     
     # Select the specific study within the Run Report (PCSI, CYT)
     selectInput("study", "Select Study", c()),
@@ -28,7 +24,7 @@ ui <- dashboardPage(
     
     # Select which metrics (Map %, Coverage, % of Target) to plots
     checkboxGroupInput(
-      "check.type", "Select Plots", c()
+      "check.type", "Select Plots"
     )
   ),
   
@@ -48,6 +44,18 @@ ui <- dashboardPage(
 
 # Server function that makes everything alive
 server <- function(session, input, output) {
+  # A data table that contains the paths and display names of the available Run Reports
+  # The Run Reports should be ordered from oldest to newest
+  all.runs.dt <- reactiveVal(NULL)
+  tryCatch({
+    loaded.dt <-listRunReports() 
+    updateSelectInput(session, "run", choices = sort(loaded.dt$name, decreasing = TRUE))
+    all.runs.dt(loaded.dt)
+  }, error = function(err) {
+    err.msg <- paste("Failed to load Run Report database:", conditionMessage(err), sep = "\n")
+    output$error_run <- renderText(err.msg)
+  })
+  
   # The current Run Report that is being displayed
   # This Reactive Variable allows different watchers to access/modify the same information
   # Can be set to NULL to display nothing. Useful if selected Run Report cannot be read
@@ -56,11 +64,12 @@ server <- function(session, input, output) {
   # Changing the Run Report updates the current.run and the Studies that can be selected
   # If any error occurs in loading report, current.run is set to NULL (nothing will be plotted) and error message is set
   observeEvent(input$run, {
+    req(input$run)
+    
     tryCatch({
       # Remove any previous error messages
       output$error_run <- renderPrint(invisible())
-      
-      current.run(createAppDT(all.runs.dt[name == input$run, path]))
+      current.run(createAppDT(all.runs.dt()[name == input$run, path]))
       all.studies <- names(current.run())
       updateSelectInput(session, "study", choices = all.studies)
     }, error = function(err) {
@@ -78,7 +87,7 @@ server <- function(session, input, output) {
     coverage.max <- max(selected.study[, "Coverage"])
     updateSliderInput(session, "slider.coverage", max = coverage.max, value = c(0, coverage.max))
     
-    if (length(input$check.type) == 0) {
+    if (is.null(input$check.type)) {
       study.types <- unique(selected.study$Type)
       updateCheckboxGroupInput(
         session, 'check.type', choices = study.types,
