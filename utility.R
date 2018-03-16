@@ -45,7 +45,7 @@ fixSeqWareTSV <- function(t.df) {
 createLong <- function(t.df) {
   epic.dt.long <- melt(t.df[, !c("Target File")], id.vars = c("Library", "Barcode", "Lane", "Run Name", "Coverage", "Study"), variable.name = "Type", value.name = "Value")
   
-  # Add back the coverage metrics to it generates its own graph
+  # Add back the coverage metrics so it generates its own graph
   epic.dt.coverage <- epic.dt.long[Type == epic.dt.long[1,]$Type, ]
   set(epic.dt.coverage, j = "Value", value = epic.dt.coverage$Coverage)
   set(epic.dt.coverage, j = "Type", value = rep("Coverage", nrow(epic.dt.coverage)))
@@ -65,7 +65,7 @@ readSeqWareTSV <- function(path) {
     set(dt, j = "Run Name", value = factor(rep(path, nrow(dt))))
     
   }, warning = function(w) {
-    stop(simpleError(conditionMessage(w)))
+    stop(conditionMessage(w))
   })
 }
 
