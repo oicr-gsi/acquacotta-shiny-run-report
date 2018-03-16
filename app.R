@@ -113,9 +113,11 @@ server <- function(session, input, output) {
     # Libraries should also be factors rather than strings
     set(selected.study, j = "Library", value = factor(selected.study$Library, levels = unique(selected.study$Library, ordered = TRUE)))
     
+    # Filter by Coverage
     selected.coverage <- input$slider.coverage
     selected.study <- selected.study[Coverage >= selected.coverage[1] & Coverage <= selected.coverage[2],]
     
+    # Keep only the metrics that will be plotted 
     selected.study <- split(selected.study, by = "Type")
     selected.type <- input$check.type
     type.to.keep <- names(selected.study) %in% selected.type
@@ -152,8 +154,9 @@ server <- function(session, input, output) {
       return(temp.plot)
     })
     
+    # If there are more than 10 plots, split them into two columns
     two.columns <- ceiling(length(input$check.type) / 2)
-    nrows <- ifelse(length(input$check.type) > 10, two.columns, length(input$check.type))
+    nrows <- ifelse(length(temp.to.plot) > 10, two.columns, length(temp.to.plot))
     subplot(plots.all, nrows = nrows, titleY = TRUE)
   })  
 }
