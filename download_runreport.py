@@ -7,8 +7,8 @@ import os.path
 import sys
 import os
 
-hpc_path = "/oicr/data/archive/web/runReports"
-hpc_glob = "**/*_report.tsv"
+HPC_PATH = "/oicr/data/archive/web/runReports"
+HPC_GLOB = "**/*_report.tsv"
 
 parser = argparse.ArgumentParser(
     description = """Obtain information about the Run Report TSV files
@@ -19,12 +19,12 @@ parser = argparse.ArgumentParser(
 )
 
 parser.add_argument(
-    "-p", "--path", default = hpc_path,
+    "-p", "--path", default = HPC_PATH
     help = "Path to HPC Run Report folder"
 )
 
 parser.add_argument(
-    "-g", "--glob", default = hpc_glob,
+    "-g", "--glob", default = HPC_GLOB,
     help = """The pathname pattern expansion used to list all Run Report files
     using Python glob library"""
 )
