@@ -19,7 +19,7 @@ parser = argparse.ArgumentParser(
 )
 
 parser.add_argument(
-    "-p", "--path", default = HPC_PATH
+    "-p", "--path", default = HPC_PATH,
     help = "Path to HPC Run Report folder"
 )
 
