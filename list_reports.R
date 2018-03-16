@@ -4,8 +4,8 @@ library(data.table)
 library(stringr)
 
 listRunReports <- function() {
-  path <- list.files("./runreport_files/", full.names = TRUE)
-  file <- sapply(strsplit(path, "/"), function(x) x[4])
+  path <- list.files(file.path(".", "runreport_files"), full.names = TRUE)
+  file <- sapply(path, basename)
   name <- str_match(file, "(.*?)_report.tsv")[,2]
   dt <- data.table(path = path, file = file, name = name)
   
