@@ -1,0 +1,7 @@
+The text is here for humans and has no impact on the function of this file. For complete details of restart.txt see http://docs.rstudio.com/shiny-server/#restarting-an-application
+
+Change the "modified time" of this file to update this app. This can most easily be done using the touch utility, as in touch restart.txt, which will update the modified timestamp on this file to the current time.
+
+The Shiny server dynamically loads the ui and server functions, which makes it easy to update an application without having to do anything. However, there are exceptions: "Some changes that you make to the code, assets, or environment of an application will require the application's R processes to be restarted for the changes to take effect. These include upgrades to packages that are used by the application, changes to .Renviron/.Rprofile or other R source files, or modifications to data files that are read-only at startup time."
+
+Existing connection to the app will continue to work and the "old" app process will be shut down when the last connection is dropped.
