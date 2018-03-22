@@ -1,5 +1,6 @@
 source("./utility.R")
 source("./list_reports.R")
+source("./read_config.R")
 
 library(plotly)
 library(data.table)
@@ -91,7 +92,7 @@ server <- function(session, input, output) {
       study.types <- unique(selected.study$Type)
       updateCheckboxGroupInput(
         session, 'check.type', choices = study.types,
-        selected = c("Coverage", "PF Reads", "Map Percent", "Reads/SP", "Percent mapped on Target", "Insert Size")
+        selected = CONFIG.DEFAULTPLOTS
       )
     }
   })
@@ -161,5 +162,4 @@ server <- function(session, input, output) {
   })  
 }
 
-shinyApp(ui, server)
-
+shinyApp(ui, server, options = list(port = CONFIG.PORT))

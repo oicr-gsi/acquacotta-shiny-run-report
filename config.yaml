@@ -1,0 +1,4 @@
+app_instance:
+    run_report_dir: ./runreport_files
+    default_plots: [Coverage, PF Reads, Map Percent, Reads/SP, Percent mapped on Target, Insert Size]
+    port: 11038
