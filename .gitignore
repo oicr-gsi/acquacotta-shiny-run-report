@@ -38,3 +38,4 @@ vignettes/*.pdf
 
 # Development folder holding local Run Reports
 runreport_files
+.Rproj.user
