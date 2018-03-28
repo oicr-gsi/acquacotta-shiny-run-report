@@ -18,9 +18,7 @@ Rscript app.R
 Load the [app.R file](app.R) in RStudio and click the [Run App button or press Command+Shift+Enter](https://shiny.rstudio.com/tutorial/written-tutorial/lesson1/).
 
 ### Shiny Server
-Server setup is described on the [OICR Wiki](https://wiki.oicr.on.ca/display/GSI/BIS+R+Shiny+Server). See the [official documentation](http://docs.rstudio.com/shiny-server/#restarting-an-application) for all options.
-
-To host Acquacotta, make repository visible in the server path (by default /srv/shiny-server and configurable at /etc/shiny-server/shiny-server.conf). Acquacotta is hosted internally at OICR at http://rshiny-stage.gsi.oicr.on.ca:3838/instances/acquacotta.
+See the [official documentation](http://docs.rstudio.com/shiny-server/#restarting-an-application) for detailed description on hosting Shiny Apps. To host Acquacotta, make repository visible in the server path (by default /srv/shiny-server and configurable at /etc/shiny-server/shiny-server.conf). 
 
 ## Updating
 To ensure Shiny Server correctly hosts an updated version of Acquacotta, change the modification time of the [restart.txt file](restart.txt) immediately after an update. On Linux, that can be done by running
