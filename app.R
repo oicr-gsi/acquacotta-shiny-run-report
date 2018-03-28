@@ -67,20 +67,19 @@ ui <- dashboardPage(
 server <- function(session, input, output) {
   # If an error string is supplied, error string will be displayed instead of a plot
   error.msg <- reactiveVal(NULL)
-
+  
   # A data table that contains the paths and display names of the available Run Reports
   # The Run Reports should be ordered from oldest to newest
   all.runs.dt <- reactiveVal(NULL)
-
+  
   # The current Run Report that is being displayed
   # This Reactive Variable allows different watchers to access/modify the same information
   # Can be set to NULL to display nothing. Useful if selected Run Report cannot be read
   current.run <- reactiveVal(NULL)
-
+  
   # Try loading Run Report names and file locations. Error will prevent the app from working, with error message displayed.
   tryCatch({
     loaded.dt <- listRunReports()
-    updateSelectInput(session, "run", choices = sort(loaded.dt$name, decreasing = TRUE))
     all.runs.dt(loaded.dt)
     
     # Populate the available metric plots (assumption is that all Run Reports have the same)
@@ -101,7 +100,10 @@ server <- function(session, input, output) {
                         value = CONFIG.DEFAULTORDERREV)
     
   }, error = function(err) {
-    err.msg <- paste("Failed to load Run Report database:", conditionMessage(err), sep = "\n")
+    err.msg <-
+      paste("Failed to load Run Report database:",
+            conditionMessage(err),
+            sep = "\n")
     error.msg(err.msg)
   })
   
@@ -113,6 +115,36 @@ server <- function(session, input, output) {
       current.run(NULL)
       output$error_run <- renderText(error.msg())
     }
+  })
+  
+  # The Run Report data table is loaded (happens once when client connects)
+  # Check if a GET request is specified and modify the app accordingly
+  observeEvent(all.runs.dt(), {
+    get.req <- parseQueryString(session$clientData$url_search)
+    get.run <- get.req$run
+    
+    # If GET specifying "run" is not given, it is NULL
+    updateSelectInput(
+      session,
+      "run",
+      choices = sort(loaded.dt$name, decreasing = TRUE),
+      selected = get.run
+    )
+    
+    # If GET "run" does not exist, app will be blank. Display error message to inform user as to why.
+    if (!is.null(get.run)) {
+      if (!(get.run %in% all.runs.dt()$name)) {
+        error.msg(
+          paste(
+            "Run Name specified in GET request does not exist: ",
+            get.run,
+            ". Select a valid run to continue.",
+            sep = ""
+          )
+        )
+      }
+    }
+    
   })
   
   # Changing the Run Report updates the current.run and the Studies that can be selected
@@ -127,7 +159,12 @@ server <- function(session, input, output) {
       all.studies <- current.run()$Study
       updateSelectInput(session, "study", choices = all.studies)
     }, error = function(err) {
-      err.msg <- paste("Failed to read Run Report TSV file for the following reason:", conditionMessage(err), sep = "\n")
+      err.msg <-
+        paste(
+          "Failed to read Run Report TSV file for the following reason:",
+          conditionMessage(err),
+          sep = "\n"
+        )
       error.msg(err.msg)
     })
   })
@@ -136,7 +173,7 @@ server <- function(session, input, output) {
   observeEvent(c(input$run, input$study), {
     req(current.run())
     
-    selected.study <- current.run()[Study == input$study, ]
+    selected.study <- current.run()[Study == input$study,]
     req(nrow(selected.study) > 0)
     
     coverage.max <- max(selected.study[, "Coverage (collapsed)"])
@@ -150,7 +187,7 @@ server <- function(session, input, output) {
   dt.to.plot <- reactive({
     req(current.run())
     
-    selected.study <- current.run()[Study == input$study, ]
+    selected.study <- current.run()[Study == input$study,]
     req(nrow(selected.study) > 0)
     
     lane.levels <- sort(unique(selected.study$Lane))
@@ -166,7 +203,7 @@ server <- function(session, input, output) {
     # Order by Lane first and then by selected metric
     setorderv(selected.study,
               c("Lane", input$order.by),
-              order = c(1, ifelse(input$order.rev, -1, 1)))
+              order = c(1, ifelse(input$order.rev,-1, 1)))
     
     # Libraries should also be factors rather than strings
     set(
@@ -182,11 +219,11 @@ server <- function(session, input, output) {
     selected.coverage <- input$slider.coverage
     selected.study <-
       selected.study[`Coverage (collapsed)` >= selected.coverage[1] &
-                       `Coverage (collapsed)` <= selected.coverage[2], ]
+                       `Coverage (collapsed)` <= selected.coverage[2],]
     
     # Keep only the metrics that will be plotted
     # As the data table contains info fields not part of input$check.type, take away metrics that will not be plotted
-    return(selected.study[,!setdiff(CONFIG.ALLPLOTS, input$check.type), with = FALSE])
+    return(selected.study[, !setdiff(CONFIG.ALLPLOTS, input$check.type), with = FALSE])
   })
   
   # Create the plot
