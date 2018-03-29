@@ -41,8 +41,8 @@ touch restart.txt
 
 ## Action points
 - [x] config file for hardcoded variables (path to run reports)
-- [ ] try-catch on the shinyApp function (to not bring down the server)
+- [x] ~~try-catch on the shinyApp function (to not bring down the server)~~ Shiny Server catches top level errors. They are displayed to the user and stack trace is logged.
 - [x] good example (screen shot)
 - [ ] write tests with an example TSV file (de-identified)
 - [x] documentation! (this readme should have information how to start the server, through RStudio and links to docs for command line)
-- [ ] add monitoring through Prometheus https://prometheus.io/docs/introduction/overview/
+- [x] ~~add monitoring through Prometheus https://prometheus.io/docs/introduction/overview/~~ No clear way to do this now, as no R hooks exist
