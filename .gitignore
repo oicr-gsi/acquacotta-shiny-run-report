@@ -33,8 +33,9 @@ vignettes/*.pdf
 *.utf8.md
 *.knit.md
 
-# Temporary Python files
-*.py.swp
+# Temporary Vim files
+*.swp
 
 # Development folder holding local Run Reports
 runreport_files
+.Rproj.user
