@@ -8,8 +8,10 @@ source("./read_config.R")
 listRunReports <- function() {
   path <- list.files(normalizePath(CONFIG.RUNPATH), full.names = TRUE)
   file <- sapply(path, basename)
-  name <- str_match(file, "(.*?)_report.tsv")[,2]
-  dt <- data.table(path = path, file = file, name = name)
+  name <- str_match(file, "(.*?)_report.tsv")[, 2]
+  dt <- data.table(path = path,
+                   file = file,
+                   name = name)
   
   if (nrow(dt) != length(unique(dt$name))) {
     stop(simpleError("Duplicated run report names were found"))
