@@ -24,14 +24,13 @@ ui <- dashboardPage(
     sliderInput("slider.coverage", "Coverage", 0, 0, value = c(0, 0)),
     
     # Select which metrics (Map %, Coverage, % of Target) to plots
-    checkboxGroupInput(
-      "check.type", "Select Plots"
-    )
+    checkboxGroupInput("check.type", "Select Plots")
   ),
   
   #Displays the plots and any errors
   dashboardBody(
-    # The css selector allows for the plot to be full height: https://stackoverflow.com/questions/36469631/how-to-get-leaflet-for-r-use-100-of-shiny-dashboard-height
+    # The css selector allows for the plot to be full height: 
+    # https://stackoverflow.com/questions/36469631/how-to-get-leaflet-for-r-use-100-of-shiny-dashboard-height
     tags$style(type = "text/css", "#plot {height: calc(100vh - 80px) !important;}"),
     
     # Shows any errors
@@ -49,11 +48,14 @@ server <- function(session, input, output) {
   # The Run Reports should be ordered from oldest to newest
   all.runs.dt <- reactiveVal(NULL)
   tryCatch({
-    loaded.dt <-listRunReports() 
+    loaded.dt <- listRunReports()
     updateSelectInput(session, "run", choices = sort(loaded.dt$name, decreasing = TRUE))
     all.runs.dt(loaded.dt)
   }, error = function(err) {
-    err.msg <- paste("Failed to load Run Report database:", conditionMessage(err), sep = "\n")
+    err.msg <-
+      paste("Failed to load Run Report database:",
+            conditionMessage(err),
+            sep = "\n")
     output$error_run <- renderText(err.msg)
   })
   
@@ -75,25 +77,33 @@ server <- function(session, input, output) {
       updateSelectInput(session, "study", choices = all.studies)
     }, error = function(err) {
       current.run(NULL)
-      err.msg <- paste("Failed to read Run Report TSV file for the following reason:", conditionMessage(err), sep = "\n")
+      err.msg <-
+        paste(
+          "Failed to read Run Report TSV file for the following reason:",
+          conditionMessage(err),
+          sep = "\n"
+        )
       output$error_run <- renderText(err.msg)
     })
   })
   
-  # Once a Run Report or Study is changed, update Coverage slider 
+  # Once a Run Report or Study is changed, update Coverage slider
   observeEvent(c(input$run, input$study), {
     selected.study <- current.run()[[input$study]]
     req(selected.study)
     
     coverage.max <- max(selected.study[, "Coverage (collapsed)"])
-    updateSliderInput(session, "slider.coverage", max = coverage.max, value = c(0, coverage.max))
+    updateSliderInput(session,
+                      "slider.coverage",
+                      max = coverage.max,
+                      value = c(0, coverage.max))
     
     if (is.null(input$check.type)) {
       study.types <- unique(selected.study$Type)
-      updateCheckboxGroupInput(
-        session, 'check.type', choices = study.types,
-        selected = CONFIG.DEFAULTPLOTS
-      )
+      updateCheckboxGroupInput(session,
+                               'check.type',
+                               choices = study.types,
+                               selected = CONFIG.DEFAULTPLOTS)
     }
   })
   
@@ -101,24 +111,41 @@ server <- function(session, input, output) {
   dt.to.plot <- reactive({
     req(input$run)
     req(input$check.type)
-
+    
     selected.study <- current.run()[[input$study]]
     req(selected.study)
     
     lane.levels <- sort(unique(selected.study$Lane))
     
     # Make Lanes a factor rather than number and sort by lane and then by coverage
-    set(selected.study, j = "Lane", value = factor(selected.study$Lane, levels = lane.levels, ordered = TRUE))
+    set(
+      selected.study,
+      j = "Lane",
+      value = factor(
+        selected.study$Lane,
+        levels = lane.levels,
+        ordered = TRUE
+      )
+    )
     setorder(selected.study, Lane, -`Coverage (collapsed)`)
     
     # Libraries should also be factors rather than strings
-    set(selected.study, j = "Library", value = factor(selected.study$Library, levels = unique(selected.study$Library, ordered = TRUE)))
+    set(
+      selected.study,
+      j = "Library",
+      value = factor(
+        selected.study$Library,
+        levels = unique(selected.study$Library, ordered = TRUE)
+      )
+    )
     
     # Filter by Coverage
     selected.coverage <- input$slider.coverage
-    selected.study <- selected.study[`Coverage (collapsed)` >= selected.coverage[1] & `Coverage (collapsed)` <= selected.coverage[2],]
+    selected.study <-
+      selected.study[`Coverage (collapsed)` >= selected.coverage[1] &
+                       `Coverage (collapsed)` <= selected.coverage[2],]
     
-    # Keep only the metrics that will be plotted 
+    # Keep only the metrics that will be plotted
     selected.study <- split(selected.study, by = "Type")
     selected.type <- input$check.type
     type.to.keep <- names(selected.study) %in% selected.type
@@ -131,23 +158,28 @@ server <- function(session, input, output) {
     
     temp.to.plot <- dt.to.plot()
     req(temp.to.plot)
-
+    
     # Removes the cryptic error message if the parameters are such that there are no data points to print
     # This is not caught by the req call because the temp.to.plot has elements, but all the elements are empty
     anything.to.print <- all(sapply(temp.to.plot, nrow))
-    if(!anything.to.print) {
+    if (!anything.to.print) {
       return(NULL)
     }
     
     legend <- TRUE
     plots.all <- lapply(temp.to.plot, function (x) {
       stat.type <- as.character(x[["Type"]][1])
-      temp.plot <- x %>% 
-        plot_ly(x = ~Library, color = paste0("Lane ", x$Lane)) %>% 
-        add_bars(y = ~Value, showlegend = legend, legendgroup = paste0("Lane ", x$Lane)) %>%
+      
+      temp.plot <- x %>%
+        plot_ly(x = ~ Library, color = paste0("Lane ", x$Lane)) %>%
+        add_bars(
+          y = ~ Value,
+          showlegend = legend,
+          legendgroup = paste0("Lane ", x$Lane)
+        ) %>%
         layout(
-          xaxis = list(visible = FALSE), 
-          yaxis = list(title = stat.type, titlefont = list(size = 8)), 
+          xaxis = list(visible = FALSE),
+          yaxis = list(title = stat.type, titlefont = list(size = 8)),
           legend = list(orientation = "h")
         )
       
@@ -157,9 +189,12 @@ server <- function(session, input, output) {
     
     # If there are more than 10 plots, split them into two columns
     two.columns <- ceiling(length(input$check.type) / 2)
-    nrows <- ifelse(length(temp.to.plot) > 10, two.columns, length(temp.to.plot))
+    nrows <-
+      ifelse(length(temp.to.plot) > 10,
+             two.columns,
+             length(temp.to.plot))
     subplot(plots.all, nrows = nrows, titleY = TRUE)
-  })  
+  })
 }
 
 shinyApp(ui, server, options = list(port = CONFIG.PORT))
