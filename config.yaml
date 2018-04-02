@@ -1,4 +1,6 @@
 app_instance:
     run_report_dir: ./runreport_files
-    default_plots: [Coverage, PF Reads, Map Percent, Reads/SP, Percent mapped on Target, Insert Size]
+    default_plots: [Coverage (collapsed), PF Reads, Map Percent, Reads/SP, Percent Mapped on Target, Insert Mean]
     port: 11038
+    column_naming: ./column_naming.csv
+    info_column: [Library, Barcode, Lane, Run Name, Coverage (collapsed), Study, Group ID, External Name, Target File]

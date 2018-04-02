@@ -85,7 +85,7 @@ server <- function(session, input, output) {
     selected.study <- current.run()[[input$study]]
     req(selected.study)
     
-    coverage.max <- max(selected.study[, "Coverage"])
+    coverage.max <- max(selected.study[, "Coverage (collapsed)"])
     updateSliderInput(session, "slider.coverage", max = coverage.max, value = c(0, coverage.max))
     
     if (is.null(input$check.type)) {
@@ -109,14 +109,14 @@ server <- function(session, input, output) {
     
     # Make Lanes a factor rather than number and sort by lane and then by coverage
     set(selected.study, j = "Lane", value = factor(selected.study$Lane, levels = lane.levels, ordered = TRUE))
-    setorder(selected.study, Lane, -Coverage)
+    setorder(selected.study, Lane, -`Coverage (collapsed)`)
     
     # Libraries should also be factors rather than strings
     set(selected.study, j = "Library", value = factor(selected.study$Library, levels = unique(selected.study$Library, ordered = TRUE)))
     
     # Filter by Coverage
     selected.coverage <- input$slider.coverage
-    selected.study <- selected.study[Coverage >= selected.coverage[1] & Coverage <= selected.coverage[2],]
+    selected.study <- selected.study[`Coverage (collapsed)` >= selected.coverage[1] & `Coverage (collapsed)` <= selected.coverage[2],]
     
     # Keep only the metrics that will be plotted 
     selected.study <- split(selected.study, by = "Type")
