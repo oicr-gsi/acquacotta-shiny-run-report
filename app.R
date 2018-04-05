@@ -29,7 +29,7 @@ ui <- dashboardPage(
   
   #Displays the plots and any errors
   dashboardBody(
-    # The css selector allows for the plot to be full height: 
+    # The css selector allows for the plot to be full height:
     # https://stackoverflow.com/questions/36469631/how-to-get-leaflet-for-r-use-100-of-shiny-dashboard-height
     tags$style(type = "text/css", "#plot {height: calc(100vh - 80px) !important;}"),
     
@@ -73,7 +73,7 @@ server <- function(session, input, output) {
       # Remove any previous error messages
       output$error_run <- renderPrint(invisible())
       current.run(createAppDT(all.runs.dt()[name == input$run, path]))
-      all.studies <- names(current.run())
+      all.studies <- current.run()$Study
       updateSelectInput(session, "study", choices = all.studies)
     }, error = function(err) {
       current.run(NULL)
@@ -89,8 +89,10 @@ server <- function(session, input, output) {
   
   # Once a Run Report or Study is changed, update Coverage slider
   observeEvent(c(input$run, input$study), {
-    selected.study <- current.run()[[input$study]]
-    req(selected.study)
+    req(current.run())
+    
+    selected.study <- current.run()[Study == input$study, ]
+    req(nrow(selected.study) > 0)
     
     coverage.max <- max(selected.study[, "Coverage (collapsed)"])
     updateSliderInput(session,
@@ -99,21 +101,19 @@ server <- function(session, input, output) {
                       value = c(0, coverage.max))
     
     if (is.null(input$check.type)) {
-      study.types <- unique(selected.study$Type)
       updateCheckboxGroupInput(session,
                                'check.type',
-                               choices = study.types,
+                               choices = CONFIG.ALLPLOTS,
                                selected = CONFIG.DEFAULTPLOTS)
     }
   })
   
   # Recalculates the data table to plot every time any variable within this expression is changed
   dt.to.plot <- reactive({
-    req(input$run)
-    req(input$check.type)
+    req(current.run())
     
-    selected.study <- current.run()[[input$study]]
-    req(selected.study)
+    selected.study <- current.run()[Study == input$study, ]
+    req(nrow(selected.study) > 0)
     
     lane.levels <- sort(unique(selected.study$Lane))
     
@@ -121,13 +121,11 @@ server <- function(session, input, output) {
     set(
       selected.study,
       j = "Lane",
-      value = factor(
-        selected.study$Lane,
-        levels = lane.levels,
-        ordered = TRUE
-      )
+      value = factor(selected.study$Lane,
+                     levels = lane.levels)
     )
-    setorder(selected.study, Lane, -`Coverage (collapsed)`)
+    
+    setorder(selected.study, Lane,-"Coverage (collapsed)")
     
     # Libraries should also be factors rather than strings
     set(
@@ -143,33 +141,23 @@ server <- function(session, input, output) {
     selected.coverage <- input$slider.coverage
     selected.study <-
       selected.study[`Coverage (collapsed)` >= selected.coverage[1] &
-                       `Coverage (collapsed)` <= selected.coverage[2],]
+                       `Coverage (collapsed)` <= selected.coverage[2], ]
     
     # Keep only the metrics that will be plotted
-    selected.study <- split(selected.study, by = "Type")
-    selected.type <- input$check.type
-    type.to.keep <- names(selected.study) %in% selected.type
-    return(selected.study[type.to.keep])
+    # As the data table contains info fields not part of input$check.type, take away metrics that will not be plotted
+    return(selected.study[,!setdiff(CONFIG.ALLPLOTS, input$check.type), with = FALSE])
   })
   
   # Create the plot
   output$plot <- renderPlotly({
-    req(input$check.type)
+    req(input$check.type, nrow(dt.to.plot()) > 0)
     
-    temp.to.plot <- dt.to.plot()
-    req(temp.to.plot)
-    
-    # Removes the cryptic error message if the parameters are such that there are no data points to print
-    # This is not caught by the req call because the temp.to.plot has elements, but all the elements are empty
-    anything.to.print <- all(sapply(temp.to.plot, nrow))
-    if (!anything.to.print) {
-      return(NULL)
-    }
+    temp.to.plot <- createLong(dt.to.plot())
+    temp.to.plot <- split(temp.to.plot, by = "Type")
     
     legend <- TRUE
     plots.all <- lapply(temp.to.plot, function (x) {
       stat.type <- as.character(x[["Type"]][1])
-      
       temp.plot <- x %>%
         plot_ly(x = ~ Library, color = paste0("Lane ", x$Lane)) %>%
         add_bars(
