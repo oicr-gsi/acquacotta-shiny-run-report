@@ -51,6 +51,12 @@ server <- function(session, input, output) {
     loaded.dt <- listRunReports()
     updateSelectInput(session, "run", choices = sort(loaded.dt$name, decreasing = TRUE))
     all.runs.dt(loaded.dt)
+
+    # Populate the available metric plots (assumption is that all Run Reports have the same)
+    updateCheckboxGroupInput(session,
+                             'check.type',
+                             choices = CONFIG.ALLPLOTS,
+                             selected = CONFIG.DEFAULTPLOTS)
   }, error = function(err) {
     err.msg <-
       paste("Failed to load Run Report database:",
@@ -99,13 +105,6 @@ server <- function(session, input, output) {
                       "slider.coverage",
                       max = coverage.max,
                       value = c(0, coverage.max))
-    
-    if (is.null(input$check.type)) {
-      updateCheckboxGroupInput(session,
-                               'check.type',
-                               choices = CONFIG.ALLPLOTS,
-                               selected = CONFIG.DEFAULTPLOTS)
-    }
   })
   
   # Recalculates the data table to plot every time any variable within this expression is changed
