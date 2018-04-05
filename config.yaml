@@ -1,12 +1,14 @@
 app_instance:
     run_report_dir: ./runreport_files
-    all_plots: [
+    plots: [
         Coverage (collapsed), Percent Mapped on Target, Map Percent, PF Reads, Reads/SP, Insert Mean,
         Insert Stddev, R1 Mismatch Percent, R2 Mismatch Percent, R1 Indel Percent, R2 Indel Percent,
         R1 Soft Clip Percent, R2 Soft Clip Percent, R1 Length, R2 Length,
         Estimated Yield (collapsed), PF Yield, Target Size (bp), Number of Targets 
     ]
-    default_plots: [Coverage (collapsed), Percent Mapped on Target, Map Percent, PF Reads, Reads/SP, Insert Mean]
     port: 11038
     column_naming: ./column_naming.csv
     info_column: [Library, Barcode, Lane, Run Name, Study, Group ID, External Name, Target File]
+default:
+    plots: [Coverage (collapsed), Percent Mapped on Target, Map Percent, PF Reads, Reads/SP, Insert Mean]
+    order: -Coverage (collapsed)
