@@ -20,17 +20,30 @@ ui <- dashboardPage(
     # Select the specific study within the Run Report (PCSI, CYT)
     selectInput("study", "Select Study", c()),
     
-    # Select Coverage cutoffs
-    sliderInput("slider.coverage", "Coverage", 0, 0, value = c(0, 0)),
+    sidebarMenu(
+      menuItem("Plot", tabName = "plot", icon = icon("image")),
+      menuItem("Filter", tabName = "filter", icon = icon("filter"))
+    ),
 
-    # Order by which metrics
-    selectInput("order.by", "Order By", c()),
+    tabItems(
+      tabItem(
+        tabName = "plot",
 
-    # Reverse the metrics order
-    checkboxInput("order.rev", "Reverse Order"),
+        # Order by which metrics
+        selectInput("order.by", "Order By", c()),
 
-    # Select which metrics (Map %, Coverage, % of Target) to plots
-    checkboxGroupInput("check.type", "Select Plots")
+        # Reverse the metrics order
+        checkboxInput("order.rev", "Reverse Order"),
+
+        # Select which metrics (Map %, Coverage, % of Target) to plots
+        checkboxGroupInput("check.type", "Select Plots")
+      ),
+      tabItem(
+        tabName = "filter",
+        # Select Coverage cutoffs
+        sliderInput("slider.coverage", "Coverage", 0, 0, value = c(0, 0))
+      )
+    )
   ),
   
   #Displays the plots and any errors
