@@ -11,4 +11,6 @@ app_instance:
     info_column: [Library, Barcode, Lane, Run Name, Study, Group ID, External Name, Target File]
 default:
     plots: [Coverage (collapsed), Percent Mapped on Target, Map Percent, PF Reads, Reads/SP, Insert Mean]
-    order: -Coverage (collapsed)
+    order: 
+        plot: Coverage (collapsed)
+        reverse: true

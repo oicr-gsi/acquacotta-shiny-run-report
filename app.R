@@ -22,7 +22,13 @@ ui <- dashboardPage(
     
     # Select Coverage cutoffs
     sliderInput("slider.coverage", "Coverage", 0, 0, value = c(0, 0)),
-    
+
+    # Order by which metrics
+    selectInput("order.by", "Order By", c()),
+
+    # Reverse the metrics order
+    checkboxInput("order.rev", "Reverse Order"),
+
     # Select which metrics (Map %, Coverage, % of Target) to plots
     checkboxGroupInput("check.type", "Select Plots")
   ),
@@ -57,6 +63,18 @@ server <- function(session, input, output) {
                              'check.type',
                              choices = CONFIG.ALLPLOTS,
                              selected = CONFIG.DEFAULTPLOTS)
+
+    # Populate the ordering metric drop down (assumption is that all the Run Reports have the same)
+    updateSelectInput(session,
+                      "order.by",
+                      choices = CONFIG.ALLPLOTS,
+                      selected = CONFIG.DEFAULTORDER)
+
+    # Set the default order direction
+    updateCheckboxInput(session,
+                        "order.rev",
+                        value = CONFIG.DEFAULTORDERREV)
+
   }, error = function(err) {
     err.msg <-
       paste("Failed to load Run Report database:",
@@ -124,7 +142,7 @@ server <- function(session, input, output) {
                      levels = lane.levels)
     )
     
-    setorder(selected.study, Lane,-"Coverage (collapsed)")
+    setorderv(selected.study, c("Lane", input$order.by), order = c(1, ifelse(input$order.rev, -1, 1)))
     
     # Libraries should also be factors rather than strings
     set(
