@@ -9,10 +9,12 @@ library(shinydashboard)
 
 # The UI
 ui <- dashboardPage(
-  dashboardHeader(),
+  dashboardHeader(titleWidth = 280),
   
   # Most User Input Widgets are initialized dynamically by the server
   dashboardSidebar(
+    width = 280,
+    
     # Select Run Report
     # Note that this assumes the oldest to newest ordering and displays the newest Run Report
     selectInput("run", "Select Run Report", c()),
@@ -24,17 +26,17 @@ ui <- dashboardPage(
       menuItem("Plot", tabName = "plot", icon = icon("image")),
       menuItem("Filter", tabName = "filter", icon = icon("filter"))
     ),
-
+    
     tabItems(
       tabItem(
         tabName = "plot",
-
+        
         # Order by which metrics
         selectInput("order.by", "Order By", c()),
-
+        
         # Reverse the metrics order
         checkboxInput("order.rev", "Reverse Order"),
-
+        
         # Select which metrics (Map %, Coverage, % of Target) to plots
         checkboxGroupInput("check.type", "Select Plots")
       ),
@@ -66,28 +68,29 @@ server <- function(session, input, output) {
   # A data table that contains the paths and display names of the available Run Reports
   # The Run Reports should be ordered from oldest to newest
   all.runs.dt <- reactiveVal(NULL)
+  
   tryCatch({
     loaded.dt <- listRunReports()
     updateSelectInput(session, "run", choices = sort(loaded.dt$name, decreasing = TRUE))
     all.runs.dt(loaded.dt)
-
+    
     # Populate the available metric plots (assumption is that all Run Reports have the same)
     updateCheckboxGroupInput(session,
                              'check.type',
                              choices = CONFIG.ALLPLOTS,
                              selected = CONFIG.DEFAULTPLOTS)
-
+    
     # Populate the ordering metric drop down (assumption is that all the Run Reports have the same)
     updateSelectInput(session,
                       "order.by",
                       choices = CONFIG.ALLPLOTS,
                       selected = CONFIG.DEFAULTORDER)
-
+    
     # Set the default order direction
     updateCheckboxInput(session,
                         "order.rev",
                         value = CONFIG.DEFAULTORDERREV)
-
+    
   }, error = function(err) {
     err.msg <-
       paste("Failed to load Run Report database:",
@@ -147,7 +150,7 @@ server <- function(session, input, output) {
     
     lane.levels <- sort(unique(selected.study$Lane))
     
-    # Make Lanes a factor rather than number and sort by lane and then by coverage
+    # Make Lanes a factor rather than number
     set(
       selected.study,
       j = "Lane",
@@ -155,7 +158,10 @@ server <- function(session, input, output) {
                      levels = lane.levels)
     )
     
-    setorderv(selected.study, c("Lane", input$order.by), order = c(1, ifelse(input$order.rev, -1, 1)))
+    # Order by Lane first and then by selected metric
+    setorderv(selected.study,
+              c("Lane", input$order.by),
+              order = c(1, ifelse(input$order.rev, -1, 1)))
     
     # Libraries should also be factors rather than strings
     set(
