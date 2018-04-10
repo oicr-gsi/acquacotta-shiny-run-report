@@ -22,8 +22,8 @@ ui <- dashboardPage(
     # Note that this assumes the oldest to newest ordering and displays the newest Run Report
     selectInput("run", "Select Run Report", c()),
     
-    # Select the specific study within the Run Report (PCSI, CYT)
-    selectInput("study", "Select Study", c()),
+    # Select one or more studies in the Run Report (PCSI, CYT)
+    selectInput("study", "Select Study", c(), multiple = TRUE),
     
     sidebarMenu(
       menuItem("Plot", tabName = "plot", icon = icon("image")),
@@ -160,7 +160,7 @@ server <- function(session, input, output) {
       error.msg(NULL)
       current.run(createAppDT(all.runs.dt()[name == input$run, path]))
       all.studies <- current.run()$Study
-      updateSelectInput(session, "study", choices = all.studies)
+      updateSelectInput(session, "study", choices = all.studies, selected = all.studies[1])
       
       # Add links that lead to useful places
       output$notificationMenu <- renderMenu({
@@ -185,7 +185,7 @@ server <- function(session, input, output) {
   observeEvent(c(input$run, input$study), {
     req(current.run())
     
-    selected.study <- current.run()[Study == input$study,]
+    selected.study <- current.run()[Study %in% input$study,]
     req(nrow(selected.study) > 0)
     
     coverage.max <- max(selected.study[, "Coverage (collapsed)"])
@@ -199,7 +199,7 @@ server <- function(session, input, output) {
   dt.to.plot <- reactive({
     req(current.run())
     
-    selected.study <- current.run()[Study == input$study,]
+    selected.study <- current.run()[Study %in% input$study,]
     req(nrow(selected.study) > 0)
     
     lane.levels <- sort(unique(selected.study$Lane))
