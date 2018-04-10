@@ -87,16 +87,17 @@ createLong <- function(t.df) {
       value.name = "Value"
     )
   
-  # Add back the coverage metrics so it generates its own graph
-  epic.dt.coverage <- epic.dt.long[Type == epic.dt.long[1, ]$Type,]
-  set(epic.dt.coverage,
-      j = "Value",
-      value = epic.dt.coverage$`Coverage (collapsed)`)
-  set(epic.dt.coverage,
-      j = "Type",
-      value = rep("Coverage (collapsed)", nrow(epic.dt.coverage)))
-  
-  epic.dt.long <- rbindlist(list(epic.dt.coverage, epic.dt.long))
+  # Order the different metrics, so that they will always be displayed in the same order
+  # Only present metrics can be included in factor levels, as data.table::split bugs out otherwise
+  set(
+    epic.dt.long,
+    j = "Type",
+    value = factor(
+      epic.dt.long$Type,
+      levels = intersect(CONFIG.ALLPLOTS, epic.dt.long$Type)
+    )
+  )
+  setorder(epic.dt.long, Type)
   
   return(epic.dt.long)
 }
@@ -124,7 +125,5 @@ readSeqWareTSV <- function(path) {
 createAppDT <- function(path) {
   current.run <- readSeqWareTSV(path)
   current.run <- fixSeqWareTSV(current.run)
-  current.run <- createLong(current.run)
-  current.run <- split(current.run, by = "Study")
   return(current.run)
 }
