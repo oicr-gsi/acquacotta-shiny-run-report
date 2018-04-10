@@ -114,6 +114,10 @@ readSeqWareTSV <- function(path) {
         header = TRUE,
         na.strings = c("NA", "na")
       )
+    
+    if ("Run Name" %in% colnames(dt)) {
+      stop("Column 'Run Name' is used internally by the App and cannot be present in Run Report")
+    }
     set(dt, j = "Run Name", value = factor(rep(path, nrow(dt))))
     
   }, warning = function(w) {
