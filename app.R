@@ -9,7 +9,10 @@ library(shinydashboard)
 
 # The UI
 ui <- dashboardPage(
-  dashboardHeader(titleWidth = 280),
+  dashboardHeader(
+    title = "Acquacotta", titleWidth = 280,
+    dropdownMenuOutput("notificationMenu")
+  ),
   
   # Most User Input Widgets are initialized dynamically by the server
   dashboardSidebar(
@@ -158,6 +161,14 @@ server <- function(session, input, output) {
       current.run(createAppDT(all.runs.dt()[name == input$run, path]))
       all.studies <- current.run()$Study
       updateSelectInput(session, "study", choices = all.studies)
+      
+      # Add links that leads to useful places
+      output$notificationMenu <- renderMenu({
+        dropdownMenu(
+          notificationItem("SeqWare Run Report", status = "info", icon = icon("copy"), href = generateRunReportURL(input$run)),
+          type= "notification", headerText = "Useful Links", icon = icon("link")
+        )
+      })
     }, error = function(err) {
       err.msg <-
         paste(

@@ -127,3 +127,7 @@ createAppDT <- function(path) {
   current.run <- fixSeqWareTSV(current.run)
   return(current.run)
 }
+
+generateRunReportURL <- function(run_alias) {
+  paste("https://www.hpc.oicr.on.ca/archive/web/runReports/", run_alias, "/", run_alias, "_report.html", sep = "")
+}
