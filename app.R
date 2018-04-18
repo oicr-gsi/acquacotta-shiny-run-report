@@ -25,6 +25,10 @@ ui <- dashboardPage(
     # Select one or more studies in the Run Report (PCSI, CYT)
     selectInput("study", "Select Study", c(), multiple = TRUE),
     
+    # Select one or more lanes in the Run Report
+    selectInput("lane", "Select Lane", c(), multiple = TRUE),
+    
+    # Selection of the menues will display different options
     sidebarMenu(
       menuItem("Plot", tabName = "plot", icon = icon("image")),
       menuItem("Filter", tabName = "filter", icon = icon("filter"))
@@ -159,8 +163,12 @@ server <- function(session, input, output) {
       # Remove any previous error messages
       error.msg(NULL)
       current.run(createAppDT(all.runs.dt()[name == input$run, path]))
-      all.studies <- current.run()$Study
-      updateSelectInput(session, "study", choices = all.studies, selected = all.studies[1])
+
+      all.studies <- unique(current.run()$Study)
+      updateSelectInput(session, "study", choices = all.studies, selected = all.studies)
+      
+      all.lanes <- unique(current.run()$Lane)
+      updateSelectInput(session, "lane", choices = all.lanes, selected = all.lanes)
       
       # Add links that lead to useful places
       output$notificationMenu <- renderMenu({
@@ -199,7 +207,7 @@ server <- function(session, input, output) {
   dt.to.plot <- reactive({
     req(current.run())
     
-    selected.study <- current.run()[Study %in% input$study,]
+    selected.study <- current.run()[Study %in% input$study & Lane %in% input$lane,]
     req(nrow(selected.study) > 0)
     
     lane.levels <- sort(unique(selected.study$Lane))
