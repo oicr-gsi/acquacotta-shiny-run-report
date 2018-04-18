@@ -165,9 +165,9 @@ server <- function(session, input, output) {
       # Add links that lead to useful places
       output$notificationMenu <- renderMenu({
         dropdownMenu(
-          notificationItem("SeqWare Run Report", status = "info", icon = icon("copy"), href = generateRunReportURL(input$run)),
-          notificationItem("MISO Run Report", status = "info", icon = icon("cog"), href = generateMisoRunURL(input$run)),
-          type= "notification", headerText = "Useful Links", icon = icon("link")
+          notificationItem("SeqWare Run Report", status = "info", icon = icon("link", lib = "glyphicon"), href = generateRunReportURL(input$run)),
+          notificationItem("MISO Run Report", status = "info", icon = icon("link", lib = "glyphicon"), href = generateMisoRunURL(input$run)),
+          type= "notification", headerText = "Useful Links", icon = icon("link", lib = "glyphicon")
         )
       })
     }, error = function(err) {
