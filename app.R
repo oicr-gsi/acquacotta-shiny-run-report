@@ -34,28 +34,29 @@ ui <- dashboardPage(
     
     # Selection of the menues will display different options
     sidebarMenu(
-      menuItem("Plot", tabName = "plot", icon = icon("image")),
-      menuItem("Filter", tabName = "filter", icon = icon("filter"))
+      id = 'menu',
+      # menuItem("Flow Cell", tabName = "flow", icon = icon("mobile ")), # For future addition
+      menuItem("Library", tabName = "library", icon = icon("book"))
     ),
     
-    tabItems(
-      tabItem(
-        tabName = "plot",
-        
-        # Order by which metrics
-        selectInput("order.by", "Order By", c()),
-        
-        # Reverse the metrics order
-        checkboxInput("order.rev", "Reverse Order"),
-        
-        # Select which metrics (Map %, Coverage, % of Target) to plots
-        checkboxGroupInput("check.type", "Select Plots")
-      ),
-      tabItem(
-        tabName = "filter",
-        # Select Coverage cutoffs
-        sliderInput("slider.coverage", "Coverage", 0, 0, value = c(0, 0))
-      )
+    # Sorting is only available at Library level display
+    conditionalPanel(
+      condition = "input.menu == 'library'",
+      # Order by which metrics
+      selectInput("order.by", "Order By", c()),
+      
+      # Reverse the metrics order
+      checkboxInput("order.rev", "Reverse Order")
+    ),
+    
+    # The options are only displayed if the appropriate menu item is selected
+    # Note that the options can still be accessed (and have values) even when not displayed
+    conditionalPanel(
+      condition = "input.menu == 'flow' || input.menu == 'library'",
+      # Select which metrics (Map %, Coverage, % of Target) to plots
+      checkboxGroupInput("check.type", "Select Plots"),
+      # Select Coverage cutoffs
+      sliderInput("slider.coverage", "Coverage Filter", 0, 0, value = c(0, 0))
     )
   ),
   
