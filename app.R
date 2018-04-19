@@ -164,11 +164,15 @@ server <- function(session, input, output) {
       error.msg(NULL)
       current.run(createAppDT(all.runs.dt()[name == input$run, path]))
 
-      all.studies <- unique(current.run()$Study)
-      updateSelectInput(session, "study", choices = all.studies, selected = all.studies)
+      all.studies.count <- current.run()[, .N, by = Study]
+      all.studies.list <- as.list(all.studies.count$Study)
+      names(all.studies.list) <- paste(all.studies.count$Study, "(", as.character(all.studies.count$N), ")", sep = "")
+      updateSelectInput(session, "study", choices = all.studies.list, selected = all.studies.count$Study)
       
-      all.lanes <- unique(current.run()$Lane)
-      updateSelectInput(session, "lane", choices = all.lanes, selected = all.lanes)
+      all.lane.count <- current.run()[, .N, by = Lane]
+      all.lane.list <- as.list(all.lane.count$Lane)
+      names(all.lane.list) <- paste(all.lane.count$Lane, "(", as.character(all.lane.count$N), ")", sep = "")
+      updateSelectInput(session, "lane", choices = all.lane.list, selected = all.lane.count$Lane)
       
       # Add links that lead to useful places
       output$notificationMenu <- renderMenu({
