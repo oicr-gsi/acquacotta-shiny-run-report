@@ -18,6 +18,10 @@ ui <- dashboardPage(
   dashboardSidebar(
     width = 280,
     
+    # https://stackoverflow.com/questions/31253351/r-shiny-dashboard-how-to-add-vertical-scrollbar-to-dashboard-sidebar
+    # This adds a scroll bar to the sidebar. The plot will stay centered on the screen even as sidebar elements are added
+    tags$style(type = "text/css", ".sidebar {height: 90vh; overflow-y: auto;}"),
+
     # Select Run Report
     # Note that this assumes the oldest to newest ordering and displays the newest Run Report
     selectInput("run", "Select Run Report", c()),
