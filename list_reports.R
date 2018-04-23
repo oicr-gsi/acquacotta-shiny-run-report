@@ -6,7 +6,7 @@ library(stringr)
 source("./read_config.R")
 
 listRunReports <- function() {
-  path <- list.files(normalizePath(CONFIG.RUNPATH), full.names = TRUE)
+  path <- list.files(normalizePath(CONFIG.RUNPATH), pattern = "*.tsv$", full.names = TRUE)
   file <- sapply(path, basename)
   name <- str_match(file, "(.*?)_report.tsv")[, 2]
   dt <- data.table(path = path,
