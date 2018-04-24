@@ -28,3 +28,5 @@ Target Size (bp),Target Size (bp),Numeric,
 Number of Targets,Number of Targets,Numeric,
 Target File,Target File,Character,
 Run Name,Run Name,Character,This field is added by the app and not present in the Run Report
+Study,Study,Character,This field is MISO Project Name derived from Library
+On Target Percentage,On Target Percentage,Numeric,Calculated by: Percent Mapped on Target * Map Percent / 100

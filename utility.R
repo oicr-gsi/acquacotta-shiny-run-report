@@ -70,12 +70,43 @@ fixSeqWareTSV <- function(t.df) {
   result.dt <- as.data.table(dt.list)
   
   # Add Study name
-  set(result.dt,
-      j = "Study",
-      value = sapply(strsplit(result.dt$Library, "_"), function(x)
-        x[[1]]))
+  result.dt <- addCustomTSVMetrics(
+    result.dt,
+    "Study",
+    sapply(strsplit(result.dt$Library, "_"), function(x) x[[1]])
+  )
   
+  # Add On Target Percentage
+  result.dt <- addCustomTSVMetrics(
+    result.dt,
+    "On Target Percentage",
+    result.dt$`Percent Mapped on Target` * result.dt$`Map Percent` / 100
+  )
+
   return(result.dt)
+}
+
+# Add fields not present in the original TSV file
+addCustomTSVMetrics <- function(dt, field_name, field_values) {
+  if (field_name %in% colnames(dt)) {
+    stop(
+      paste(
+        "Custom field name cannot be added as it already exists:",
+        field_name
+      )
+    )
+  }
+  
+  if (!(field_name %in% COLUMN.NAME$app.name)) {
+    stop(
+      paste(
+        "Custom field not specified in annotation file:",
+        field_name
+      )
+    )
+  }
+  
+  set(dt, j = field_name, value = field_values) 
 }
 
 createLong <- function(t.df) {
