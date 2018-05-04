@@ -10,7 +10,7 @@ source("./read_config.R")
 # dir_path: The path to the directory holding the SeqWare TSV file
 # name: The human readable name that is exposer to user
 listRunReports <- function() {
-  path <- list.files(normalizePath(CONFIG.RUNPATH), pattern = ".*tsv$", full.names = TRUE, recursive = TRUE)
+  path <- list.files(normalizePath(CONFIG.RUNPATH), pattern = ".*\\.tsv$", full.names = TRUE, recursive = TRUE)
   file <- basename(path)
   name <- str_match(file, "(.*?)_report.tsv")[, 2]
   dt <- data.table(path = path,
