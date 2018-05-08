@@ -5,6 +5,7 @@ library(stringr)
 
 source("./read_config.R")
 
+# This assumes a base folder full of run folders that contain the TSV and JSON files 
 # file: The filename of the SeqWare TSV Run Report
 # path: The path to the SeqWare TSV file
 # dir_path: The path to the directory holding the SeqWare TSV file
@@ -23,9 +24,14 @@ listRunReports <- function() {
   valid_dir <- valid_dir[2:length(valid_dir)]
   dt <- dt[dt$dir_path %in% valid_dir, ]
   
-  if (nrow(dt) != length(unique(dt$name))) {
-    stop(simpleError("Duplicated run report names were found"))
-  }
+  # If two or more TSV files share the same name, their parent folder name is prepanded to remove ambiguity
+  dup_name <- duplicated(dt$name) | duplicated(dt$name, fromLast = TRUE)
+  unambiguous_name <- paste(
+    basename(dt[dup_name, dir_path]), 
+    dt[dup_name, name], 
+    sep = "/"
+  )
+  dt$name[dup_name] <- unambiguous_name
   
   return(dt)
 }
