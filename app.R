@@ -82,7 +82,7 @@ server <- function(session, input, output) {
   
   # Try loading Run Report names and file locations. Error will prevent the app from working, with error message displayed.
   tryCatch({
-    loaded.dt <- listRunReports()
+    loaded.dt <- listRunReports(CONFIG.RUNPATH)
     all.runs.dt(loaded.dt)
     
     # Populate the available metric plots (assumption is that all Run Reports have the same)
