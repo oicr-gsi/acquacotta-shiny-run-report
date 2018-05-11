@@ -18,36 +18,45 @@ ui <- dashboardPage(
   dashboardSidebar(
     width = 280,
     
+    # https://stackoverflow.com/questions/31253351/r-shiny-dashboard-how-to-add-vertical-scrollbar-to-dashboard-sidebar
+    # This adds a scroll bar to the sidebar. The plot will stay centered on the screen even as sidebar elements are added
+    tags$style(type = "text/css", ".sidebar {height: 90vh; overflow-y: auto;}"),
+
     # Select Run Report
     # Note that this assumes the oldest to newest ordering and displays the newest Run Report
     selectInput("run", "Select Run Report", c()),
     
-    # Select the specific study within the Run Report (PCSI, CYT)
-    selectInput("study", "Select Study", c()),
+    # Select one or more studies in the Run Report (PCSI, CYT)
+    selectInput("study", "Select Study", c(), multiple = TRUE),
     
+    # Select one or more lanes in the Run Report
+    selectInput("lane", "Select Lane", c(), multiple = TRUE),
+    
+    # Selection of the menues will display different options
     sidebarMenu(
-      menuItem("Plot", tabName = "plot", icon = icon("image")),
-      menuItem("Filter", tabName = "filter", icon = icon("filter"))
+      id = 'menu',
+      # menuItem("Flow Cell", tabName = "flow", icon = icon("mobile ")), # For future addition
+      menuItem("Library", tabName = "library", icon = icon("book"))
     ),
     
-    tabItems(
-      tabItem(
-        tabName = "plot",
-        
-        # Order by which metrics
-        selectInput("order.by", "Order By", c()),
-        
-        # Reverse the metrics order
-        checkboxInput("order.rev", "Reverse Order"),
-        
-        # Select which metrics (Map %, Coverage, % of Target) to plots
-        checkboxGroupInput("check.type", "Select Plots")
-      ),
-      tabItem(
-        tabName = "filter",
-        # Select Coverage cutoffs
-        sliderInput("slider.coverage", "Coverage", 0, 0, value = c(0, 0))
-      )
+    # Sorting is only available at Library level display
+    conditionalPanel(
+      condition = "input.menu == 'library'",
+      # Order by which metrics
+      selectInput("order.by", "Order By", c()),
+      
+      # Reverse the metrics order
+      checkboxInput("order.rev", "Reverse Order")
+    ),
+    
+    # The options are only displayed if the appropriate menu item is selected
+    # Note that the options can still be accessed (and have values) even when not displayed
+    conditionalPanel(
+      condition = "input.menu == 'flow' || input.menu == 'library'",
+      # Select which metrics (Map %, Coverage, % of Target) to plots
+      checkboxGroupInput("check.type", "Select Plots"),
+      # Select Coverage cutoffs
+      sliderInput("slider.coverage", "Coverage Filter", 0, 0, value = c(0, 0))
     )
   ),
   
@@ -159,8 +168,16 @@ server <- function(session, input, output) {
       # Remove any previous error messages
       error.msg(NULL)
       current.run(createAppDT(all.runs.dt()[name == input$run, path]))
-      all.studies <- current.run()$Study
-      updateSelectInput(session, "study", choices = all.studies)
+
+      all.studies.count <- current.run()[, .N, by = Study]
+      all.studies.list <- as.list(all.studies.count$Study)
+      names(all.studies.list) <- paste(all.studies.count$Study, "(", as.character(all.studies.count$N), ")", sep = "")
+      updateSelectInput(session, "study", choices = all.studies.list, selected = all.studies.count$Study)
+      
+      all.lane.count <- current.run()[, .N, by = Lane]
+      all.lane.list <- as.list(all.lane.count$Lane)
+      names(all.lane.list) <- paste(all.lane.count$Lane, "(", as.character(all.lane.count$N), ")", sep = "")
+      updateSelectInput(session, "lane", choices = all.lane.list, selected = all.lane.count$Lane)
       
       # Add links that lead to useful places
       output$notificationMenu <- renderMenu({
@@ -185,7 +202,7 @@ server <- function(session, input, output) {
   observeEvent(c(input$run, input$study), {
     req(current.run())
     
-    selected.study <- current.run()[Study == input$study,]
+    selected.study <- current.run()[Study %in% input$study,]
     req(nrow(selected.study) > 0)
     
     coverage.max <- max(selected.study[, "Coverage (collapsed)"])
@@ -199,7 +216,7 @@ server <- function(session, input, output) {
   dt.to.plot <- reactive({
     req(current.run())
     
-    selected.study <- current.run()[Study == input$study,]
+    selected.study <- current.run()[Study %in% input$study & Lane %in% input$lane,]
     req(nrow(selected.study) > 0)
     
     lane.levels <- sort(unique(selected.study$Lane))
