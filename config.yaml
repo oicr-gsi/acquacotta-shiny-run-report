@@ -8,7 +8,7 @@ app_instance:
     ]
     port: 11038
     column_naming: ./column_naming.csv
-    info_column: [Library, Barcode, Lane, Run Name, Study, Group ID, External Name, Target File]
+    info_column: [Library, Barcode, Lane, Run Name, Study, Group ID, External Name, Target File, plotly_library_selected, plotly_unique_key]
 default:
     plots: [Coverage (collapsed), On Target Percentage, Map Percent, PF Reads, Reads/SP, Insert Mean]
     order: 

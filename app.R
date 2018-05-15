@@ -6,6 +6,7 @@ library(plotly)
 library(data.table)
 library(shiny)
 library(shinydashboard)
+library(shinyjs)
 
 # The UI
 ui <- dashboardPage(
@@ -13,11 +14,11 @@ ui <- dashboardPage(
     title = "Acquacotta", titleWidth = 280,
     dropdownMenuOutput("notificationMenu")
   ),
-  
+
   # Most User Input Widgets are initialized dynamically by the server
   dashboardSidebar(
     width = 280,
-    
+
     # https://stackoverflow.com/questions/31253351/r-shiny-dashboard-how-to-add-vertical-scrollbar-to-dashboard-sidebar
     # This adds a scroll bar to the sidebar. The plot will stay centered on the screen even as sidebar elements are added
     tags$style(type = "text/css", ".sidebar {height: 90vh; overflow-y: auto;}"),
@@ -25,30 +26,30 @@ ui <- dashboardPage(
     # Select Run Report
     # Note that this assumes the oldest to newest ordering and displays the newest Run Report
     selectInput("run", "Select Run Report", c()),
-    
+
     # Select one or more studies in the Run Report (PCSI, CYT)
     selectInput("study", "Select Study", c(), multiple = TRUE),
-    
+
     # Select one or more lanes in the Run Report
     selectInput("lane", "Select Lane", c(), multiple = TRUE),
-    
+
     # Selection of the menues will display different options
     sidebarMenu(
       id = 'menu',
-      # menuItem("Flow Cell", tabName = "flow", icon = icon("mobile ")), # For future addition
-      menuItem("Library", tabName = "library", icon = icon("book"))
+      menuItem("Library", tabName = "library", icon = icon("book")),
+      menuItem("Selection", tabName = "selection", icon = icon("clone"))
     ),
-    
+
     # Sorting is only available at Library level display
     conditionalPanel(
       condition = "input.menu == 'library'",
       # Order by which metrics
       selectInput("order.by", "Order By", c()),
-      
+
       # Reverse the metrics order
       checkboxInput("order.rev", "Reverse Order")
     ),
-    
+
     # The options are only displayed if the appropriate menu item is selected
     # Note that the options can still be accessed (and have values) even when not displayed
     conditionalPanel(
@@ -59,19 +60,38 @@ ui <- dashboardPage(
       sliderInput("slider.coverage", "Coverage Filter", 0, 0, value = c(0, 0))
     )
   ),
-  
+
   #Displays the plots and any errors
   dashboardBody(
+    # Enables the use of shinyjs
+    useShinyjs(),
+
+    # https://stackoverflow.com/questions/44412382/clicking-same-plotly-marker-twice-does-not-trigger-events-twice
+    # Clicking on the same library bar twice does not trigger event twice. This custom JS resets the event to null
+    # It is called in the reactive expression that deals with the click event
+    extendShinyjs(text = "shinyjs.resetLibClick = function() { Shiny.onInputChange('.clientValue-plotly_click-library_plot', 'null'); }"),
+
     # The css selector allows for the plot to be full height:
     # https://stackoverflow.com/questions/36469631/how-to-get-leaflet-for-r-use-100-of-shiny-dashboard-height
     tags$style(type = "text/css", "#plot {height: calc(100vh - 80px) !important;}"),
-    
+
     # Shows any errors
     # By default has no content and has no dimensions
     verbatimTextOutput("error_run"),
-    
-    # The css selector and the id of plotlyOutput must match
-    plotlyOutput("plot", height = "100%")
+
+    # Only one plot will be displayed at a time given which menu is selected
+    # If a menu is selected that does not match any tabName, the last selected tab stays open
+    tabItems(
+      tabItem(
+        tabName = "library",
+        # The css selector and the id of plotlyOutput must match
+        plotlyOutput("plot", height = "100%")
+      ),
+      tabItem(
+        tabName = "selection",
+        tableOutput("text_selection")
+      )
+    )
   )
 )
 
@@ -79,38 +99,38 @@ ui <- dashboardPage(
 server <- function(session, input, output) {
   # If an error string is supplied, error string will be displayed instead of a plot
   error.msg <- reactiveVal(NULL)
-  
+
   # A data table that contains the paths and display names of the available Run Reports
   # The Run Reports should be ordered from oldest to newest
   all.runs.dt <- reactiveVal(NULL)
-  
+
   # The current Run Report that is being displayed
   # This Reactive Variable allows different watchers to access/modify the same information
   # Can be set to NULL to display nothing. Useful if selected Run Report cannot be read
   current.run <- reactiveVal(NULL)
-  
+
   # Try loading Run Report names and file locations. Error will prevent the app from working, with error message displayed.
   tryCatch({
     loaded.dt <- listRunReports(CONFIG.RUNPATH)
     all.runs.dt(loaded.dt)
-    
+
     # Populate the available metric plots (assumption is that all Run Reports have the same)
     updateCheckboxGroupInput(session,
                              'check.type',
                              choices = CONFIG.ALLPLOTS,
                              selected = CONFIG.DEFAULTPLOTS)
-    
+
     # Populate the ordering metric drop down (assumption is that all the Run Reports have the same)
     updateSelectInput(session,
                       "order.by",
                       choices = CONFIG.ALLPLOTS,
                       selected = CONFIG.DEFAULTORDER)
-    
+
     # Set the default order direction
     updateCheckboxInput(session,
                         "order.rev",
                         value = CONFIG.DEFAULTORDERREV)
-    
+
   }, error = function(err) {
     err.msg <-
       paste("Failed to load Run Report database:",
@@ -118,7 +138,7 @@ server <- function(session, input, output) {
             sep = "\n")
     error.msg(err.msg)
   })
-  
+
   # Set error.msg to NULL to hide it, otherwise plot will be hidden and error message diplayed
   observeEvent(error.msg(), {
     if (is.null(error.msg())) {
@@ -128,13 +148,13 @@ server <- function(session, input, output) {
       output$error_run <- renderText(error.msg())
     }
   })
-  
+
   # The Run Report data table is loaded (happens once when client connects)
   # Check if a GET request is specified and modify the app accordingly
   observeEvent(all.runs.dt(), {
     get.req <- parseQueryString(session$clientData$url_search)
     get.run <- get.req$run
-    
+
     # If GET specifying "run" is not given, it is NULL
     updateSelectInput(
       session,
@@ -142,7 +162,7 @@ server <- function(session, input, output) {
       choices = sort(loaded.dt$name, decreasing = TRUE),
       selected = get.run
     )
-    
+
     # If GET "run" does not exist, app will be blank. Display error message to inform user as to why.
     if (!is.null(get.run)) {
       if (!(get.run %in% all.runs.dt()$name)) {
@@ -156,29 +176,31 @@ server <- function(session, input, output) {
         )
       }
     }
-    
+
   })
-  
+
   # Changing the Run Report updates the current.run and the Studies that can be selected
   # If any error occurs in loading report, current.run is set to NULL (nothing will be plotted) and error message is set
   observeEvent(input$run, {
     req(input$run)
-    
+
     tryCatch({
       # Remove any previous error messages
       error.msg(NULL)
       current.run(createAppDT(all.runs.dt()[name == input$run, path]))
 
+      # Add library counts to each Study name
       all.studies.count <- current.run()[, .N, by = Study]
       all.studies.list <- as.list(all.studies.count$Study)
       names(all.studies.list) <- paste(all.studies.count$Study, "(", as.character(all.studies.count$N), ")", sep = "")
       updateSelectInput(session, "study", choices = all.studies.list, selected = all.studies.count$Study)
-      
+
+      # Add library counts to each Lane
       all.lane.count <- current.run()[, .N, by = Lane]
       all.lane.list <- as.list(all.lane.count$Lane)
       names(all.lane.list) <- paste(all.lane.count$Lane, "(", as.character(all.lane.count$N), ")", sep = "")
       updateSelectInput(session, "lane", choices = all.lane.list, selected = all.lane.count$Lane)
-      
+
       # Add links that lead to useful places
       output$notificationMenu <- renderMenu({
         dropdownMenu(
@@ -197,30 +219,30 @@ server <- function(session, input, output) {
       error.msg(err.msg)
     })
   })
-  
+
   # Once a Run Report or Study is changed, update Coverage slider
   observeEvent(c(input$run, input$study), {
     req(current.run())
-    
+
     selected.study <- current.run()[Study %in% input$study,]
     req(nrow(selected.study) > 0)
-    
+
     coverage.max <- max(selected.study[, "Coverage (collapsed)"])
     updateSliderInput(session,
                       "slider.coverage",
                       max = coverage.max,
                       value = c(0, coverage.max))
   })
-  
+
   # Recalculates the data table to plot every time any variable within this expression is changed
   dt.to.plot <- reactive({
     req(current.run())
-    
+
     selected.study <- current.run()[Study %in% input$study & Lane %in% input$lane,]
     req(nrow(selected.study) > 0)
-    
+
     lane.levels <- sort(unique(selected.study$Lane))
-    
+
     # Make Lanes a factor rather than number
     set(
       selected.study,
@@ -228,12 +250,12 @@ server <- function(session, input, output) {
       value = factor(selected.study$Lane,
                      levels = lane.levels)
     )
-    
+
     # Order by Lane first and then by selected metric
     setorderv(selected.study,
               c("Lane", input$order.by),
               order = c(1, ifelse(input$order.rev,-1, 1)))
-    
+
     # Libraries should also be factors rather than strings
     set(
       selected.study,
@@ -243,30 +265,44 @@ server <- function(session, input, output) {
         levels = unique(selected.study$Library, ordered = TRUE)
       )
     )
-    
+
     # Filter by Coverage
     selected.coverage <- input$slider.coverage
     selected.study <-
       selected.study[`Coverage (collapsed)` >= selected.coverage[1] &
                        `Coverage (collapsed)` <= selected.coverage[2],]
-    
+
     # Keep only the metrics that will be plotted
     # As the data table contains info fields not part of input$check.type, take away metrics that will not be plotted
     return(selected.study[, !setdiff(CONFIG.ALLPLOTS, input$check.type), with = FALSE])
   })
-  
+
   # Create the plot
   output$plot <- renderPlotly({
     req(input$check.type, nrow(dt.to.plot()) > 0)
-    
+
     temp.to.plot <- createLong(dt.to.plot())
     temp.to.plot <- split(temp.to.plot, by = "Type")
-    
+
     legend <- TRUE
     plots.all <- lapply(temp.to.plot, function (x) {
       stat.type <- as.character(x[["Type"]][1])
+      selected <- x$plotly_library_selected
+      line_width <- ifelse(selected, 3, 0)
+
       temp.plot <- x %>%
-        plot_ly(x = ~ Library, color = paste0("Lane ", x$Lane)) %>%
+        plot_ly(
+          x = ~ Library,
+          color = paste0("Lane ", x$Lane),
+          # I could not find official documentation for the key attribute
+          # It is exposed through event_data, allowing for each plotted data point to be unambiguously identified
+          # https://stackoverflow.com/questions/46304639/how-to-use-plotly-to-return-the-same-event-data-information-for-selected-points
+          key = ~ plotly_unique_key,
+          # This string is used by event_data to register user interactions with the plot
+          # This string is used by shinyjs to reset a click event, so that the user can click on the same plot element twice
+          source = CONFIG.ID.LIBPLOT.SOURCE,
+          marker = list(line = list(color = 'rgb(0,0,0)', width = line_width))
+          ) %>%
         add_bars(
           y = ~ Value,
           showlegend = legend,
@@ -277,11 +313,11 @@ server <- function(session, input, output) {
           yaxis = list(title = stat.type, titlefont = list(size = 8)),
           legend = list(orientation = "h")
         )
-      
+
       legend <<- FALSE
       return(temp.plot)
     })
-    
+
     # If there are more than 10 plots, split them into two columns
     two.columns <- ceiling(length(input$check.type) / 2)
     nrows <-
@@ -289,6 +325,29 @@ server <- function(session, input, output) {
              two.columns,
              length(temp.to.plot))
     subplot(plots.all, nrows = nrows, titleY = TRUE)
+  })
+
+  # Shows the libraries selected by the user
+  output$text_selection <- renderTable({
+    current.run()[plotly_library_selected == TRUE, c("Library", "Lane", "Barcode")]
+  })
+
+  # Toggles clicked library bar selection
+  observeEvent(event_data("plotly_click", source = CONFIG.ID.LIBPLOT.SOURCE), {
+    req(current.run())
+
+    run <- current.run()
+    library.clicked <- event_data("plotly_click", source = CONFIG.ID.LIBPLOT.SOURCE)$key
+    print(library.clicked)
+
+    run[plotly_unique_key == library.clicked, plotly_library_selected := ifelse(plotly_library_selected == TRUE, FALSE, TRUE)]
+
+    # Resets the click event using shinyjs to allow the same plotted bar to be clicked twice
+    js$resetLibClick()
+
+    # For unknown reason, current.run has to be set to NULL first for the reactive variable to be re-evaluated
+    current.run(NULL)
+    current.run(run)
   })
 }
 

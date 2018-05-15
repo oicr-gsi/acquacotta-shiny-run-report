@@ -82,6 +82,20 @@ fixSeqWareTSV <- function(t.df) {
     "On Target Percentage",
     result.dt$`Percent Mapped on Target` * result.dt$`Map Percent` / 100
   )
+  
+  # Field keeps track if a library has been selected by user
+  result.dt <- addCustomTSVMetrics(
+    result.dt,
+    "plotly_library_selected",
+    FALSE
+  )
+  
+  # Field that must be unique for each library. For illumina that is: Library name + lane + barcode
+  result.dt <- addCustomTSVMetrics(
+    result.dt,
+    "plotly_unique_key",
+    paste(result.dt$Library, result.dt$Lane, result.dt$Barcode, sep = "_")
+  )
 
   return(result.dt)
 }

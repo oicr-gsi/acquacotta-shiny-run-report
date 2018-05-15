@@ -9,3 +9,6 @@ CONFIG.COLUMN <- CONFIG$app_instance$column_naming
 CONFIG.INFO.COLUMN <- CONFIG$app_instance$info_column
 CONFIG.DEFAULTORDER <- CONFIG$default$order$plot
 CONFIG.DEFAULTORDERREV <- CONFIG$default$order$reverse
+
+# Name of source variable for library plots that allows user interaction
+CONFIG.ID.LIBPLOT.SOURCE = "library_plot"
