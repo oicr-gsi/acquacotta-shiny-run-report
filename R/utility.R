@@ -1,22 +1,17 @@
-source("./read_config.R")
-
-library(data.table)
-
-# This file contains information about the expected column names, name conversions, and column types
-COLUMN.NAME <- fread(CONFIG.COLUMN)
+#' @import stringr
 
 fixSeqWareTSV <- function(t.df) {
   t.df.colnames <- colnames(t.df)
-  
+
   # Library column is duplicated for some reason in Run Report TSV files. This removes is.
   # Note that if duplicated column names with different data exist, the second one will be ignored.
   t.df.colnames <- unique(t.df.colnames)
-  
+
   # Create a data table for each column
   dt.list <- lapply(t.df.colnames, function(x) {
-    conversion <- COLUMN.NAME[file.name == x, ]
+    conversion <- CONFIG.VALID.FIELD[file.name == x, ]
     data <- t.df[[x]]
-    
+
     if (nrow(conversion) != 1) {
       stop(
         paste(
@@ -28,7 +23,7 @@ fixSeqWareTSV <- function(t.df) {
         )
       )
     }
-    
+
     # Split Read Length from a character column into two numeric columns
     if (conversion$app.name == "#Split_Read1_Read2") {
       read.length <- sapply(data, function(x)
@@ -40,7 +35,7 @@ fixSeqWareTSV <- function(t.df) {
         ))
       return(data)
     }
-    
+
     # Split insert size and SD from a character column into two numeric columns
     if (conversion$app.name == "#Split_Mean_SD") {
       in.sd <- gsub("[\\(\\)]", "", data)
@@ -53,43 +48,43 @@ fixSeqWareTSV <- function(t.df) {
         ))
       return(data)
     }
-    
+
     # If it is a numeric type, only leave numbers and periods
     if (conversion$type == "Numeric") {
       data <- gsub("[^0-9\\.]", "", data)
       data <- as.numeric(data)
     }
-    
+
     result <- list()
-    
+
     # The column is renamed to canonical name
     result[[conversion$app.name]] <- data
     return(as.data.table(result))
   })
-  
+
   result.dt <- as.data.table(dt.list)
-  
+
   # Add Study name
   result.dt <- addCustomTSVMetrics(
     result.dt,
     "Study",
     sapply(strsplit(result.dt$Library, "_"), function(x) x[[1]])
   )
-  
+
   # Add On Target Percentage
   result.dt <- addCustomTSVMetrics(
     result.dt,
     "On Target Percentage",
     result.dt$`Percent Mapped on Target` * result.dt$`Map Percent` / 100
   )
-  
+
   # Field keeps track if a library has been selected by user
   result.dt <- addCustomTSVMetrics(
     result.dt,
     "plotly_library_selected",
     FALSE
   )
-  
+
   # Field that must be unique for each library. For illumina that is: Library name + lane + barcode
   result.dt <- addCustomTSVMetrics(
     result.dt,
@@ -110,8 +105,8 @@ addCustomTSVMetrics <- function(dt, field_name, field_values) {
       )
     )
   }
-  
-  if (!(field_name %in% COLUMN.NAME$app.name)) {
+
+  if (!(field_name %in% CONFIG.VALID.FIELD$app.name)) {
     stop(
       paste(
         "Custom field not specified in annotation file:",
@@ -119,8 +114,8 @@ addCustomTSVMetrics <- function(dt, field_name, field_values) {
       )
     )
   }
-  
-  set(dt, j = field_name, value = field_values) 
+
+  set(dt, j = field_name, value = field_values)
 }
 
 createLong <- function(t.df) {
@@ -131,7 +126,7 @@ createLong <- function(t.df) {
       variable.name = "Type",
       value.name = "Value"
     )
-  
+
   # Order the different metrics, so that they will always be displayed in the same order
   # Only present metrics can be included in factor levels, as data.table::split bugs out otherwise
   set(
@@ -143,7 +138,7 @@ createLong <- function(t.df) {
     )
   )
   setorder(epic.dt.long, Type)
-  
+
   return(epic.dt.long)
 }
 
@@ -159,12 +154,12 @@ readSeqWareTSV <- function(path) {
         header = TRUE,
         na.strings = c("NA", "na")
       )
-    
+
     if ("Run Name" %in% colnames(dt)) {
       stop("Column 'Run Name' is used internally by the App and cannot be present in Run Report")
     }
     set(dt, j = "Run Name", value = factor(rep(path, nrow(dt))))
-    
+
   }, warning = function(w) {
     stop(conditionMessage(w))
   })
