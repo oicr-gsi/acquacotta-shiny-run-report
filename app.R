@@ -10,4 +10,4 @@ source("./R/utility.R")
 source("./R/list_reports.R")
 source("./R/app.R")
 
-shinyApp(ui, server, options = list(port = 4567))
+shinyApp(ui, server, options = list(port = CONFIG.PORT))

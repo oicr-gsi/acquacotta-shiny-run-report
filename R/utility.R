@@ -9,7 +9,7 @@ fixSeqWareTSV <- function(t.df) {
 
   # Create a data table for each column
   dt.list <- lapply(t.df.colnames, function(x) {
-    conversion <- CONFIG.VALID.FIELD[file.name == x, ]
+    conversion <- loadValidFields()[file.name == x, ]
     data <- t.df[[x]]
 
     if (nrow(conversion) != 1) {
@@ -106,7 +106,7 @@ addCustomTSVMetrics <- function(dt, field_name, field_values) {
     )
   }
 
-  if (!(field_name %in% CONFIG.VALID.FIELD$app.name)) {
+  if (!(field_name %in% loadValidFields()$app.name)) {
     stop(
       paste(
         "Custom field not specified in annotation file:",
@@ -170,6 +170,11 @@ createAppDT <- function(path) {
   current.run <- readSeqWareTSV(path)
   current.run <- fixSeqWareTSV(current.run)
   return(current.run)
+}
+
+loadValidFields <- function() {
+  valid_fields <- fread(normalizePath(CONFIG.VALID.FIELD))
+  return(valid_fields)
 }
 
 generateRunReportURL <- function(run_alias) {

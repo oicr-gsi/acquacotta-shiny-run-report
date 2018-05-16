@@ -2,6 +2,7 @@
 #' @import shiny
 #' @import data.table
 #' @import plotly
+#' @import V8
 
 # The UI
 ui <- dashboardPage(
@@ -345,7 +346,9 @@ server <- function(session, input, output) {
   })
 }
 
+#' Run Acquacotta on the default port
+#'
 #' @export
 runAcquacotta <- function() {
-  shinyApp(ui, server, options = list(port = 4567))
+  shinyApp(ui, server, options = list(port = CONFIG.PORT))
 }

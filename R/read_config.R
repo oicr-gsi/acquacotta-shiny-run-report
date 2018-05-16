@@ -21,7 +21,7 @@ CONFIG.ALLPLOTS <- c(
 
 CONFIG.DEFAULTPLOTS <- c("Coverage (collapsed)", "On Target Percentage", "Map Percent", "PF Reads", "Reads/SP", "Insert Mean")
 
-CONFIG.VALID.FIELD <- fread(normalizePath("./config/column_naming.csv"))
+CONFIG.VALID.FIELD <- "./config/column_naming.csv"
 
 CONFIG.INFO.COLUMN <- c(
   "Library", "Barcode", "Lane", "Run Name", "Study", "Group ID", "External Name", "Target File",
@@ -30,3 +30,5 @@ CONFIG.INFO.COLUMN <- c(
 
 CONFIG.DEFAULTORDER <- "Coverage (collapsed)"
 CONFIG.DEFAULTORDERREV <- TRUE
+
+CONFIG.PORT <- 11038
