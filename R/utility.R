@@ -1,6 +1,5 @@
-#' @import stringr
 
-fixSeqWareTSV <- function(t.df) {
+fixSeqWareTSV <- function(t.df, valid.dt) {
   t.df.colnames <- colnames(t.df)
 
   # Library column is duplicated for some reason in Run Report TSV files. This removes is.
@@ -9,7 +8,7 @@ fixSeqWareTSV <- function(t.df) {
 
   # Create a data table for each column
   dt.list <- lapply(t.df.colnames, function(x) {
-    conversion <- loadValidFields()[file.name == x, ]
+    conversion <- valid.dt[file.name == x, ]
     data <- t.df[[x]]
 
     if (nrow(conversion) != 1) {
@@ -67,6 +66,7 @@ fixSeqWareTSV <- function(t.df) {
   # Add Study name
   result.dt <- addCustomTSVMetrics(
     result.dt,
+    valid.dt,
     "Study",
     sapply(strsplit(result.dt$Library, "_"), function(x) x[[1]])
   )
@@ -74,6 +74,7 @@ fixSeqWareTSV <- function(t.df) {
   # Add On Target Percentage
   result.dt <- addCustomTSVMetrics(
     result.dt,
+    valid.dt,
     "On Target Percentage",
     result.dt$`Percent Mapped on Target` * result.dt$`Map Percent` / 100
   )
@@ -81,6 +82,7 @@ fixSeqWareTSV <- function(t.df) {
   # Field keeps track if a library has been selected by user
   result.dt <- addCustomTSVMetrics(
     result.dt,
+    valid.dt,
     "plotly_library_selected",
     FALSE
   )
@@ -88,6 +90,7 @@ fixSeqWareTSV <- function(t.df) {
   # Field that must be unique for each library. For illumina that is: Library name + lane + barcode
   result.dt <- addCustomTSVMetrics(
     result.dt,
+    valid.dt,
     "plotly_unique_key",
     paste(result.dt$Library, result.dt$Lane, result.dt$Barcode, sep = "_")
   )
@@ -96,7 +99,7 @@ fixSeqWareTSV <- function(t.df) {
 }
 
 # Add fields not present in the original TSV file
-addCustomTSVMetrics <- function(dt, field_name, field_values) {
+addCustomTSVMetrics <- function(dt, valid.dt, field_name, field_values) {
   if (field_name %in% colnames(dt)) {
     stop(
       paste(
@@ -106,7 +109,7 @@ addCustomTSVMetrics <- function(dt, field_name, field_values) {
     )
   }
 
-  if (!(field_name %in% loadValidFields()$app.name)) {
+  if (!(field_name %in% valid.dt$app.name)) {
     stop(
       paste(
         "Custom field not specified in annotation file:",
@@ -118,11 +121,11 @@ addCustomTSVMetrics <- function(dt, field_name, field_values) {
   set(dt, j = field_name, value = field_values)
 }
 
-createLong <- function(t.df) {
+createLong <- function(t.df, all_plots, info_columns) {
   epic.dt.long <-
     melt(
       t.df,
-      id.vars = intersect(CONFIG.INFO.COLUMN, colnames(t.df)),
+      id.vars = intersect(info_columns, colnames(t.df)),
       variable.name = "Type",
       value.name = "Value"
     )
@@ -134,7 +137,7 @@ createLong <- function(t.df) {
     j = "Type",
     value = factor(
       epic.dt.long$Type,
-      levels = intersect(CONFIG.ALLPLOTS, epic.dt.long$Type)
+      levels = intersect(all_plots, epic.dt.long$Type)
     )
   )
   setorder(epic.dt.long, Type)
@@ -166,15 +169,10 @@ readSeqWareTSV <- function(path) {
 }
 
 # The data table that will be used throughout the app, starting from the path to the Run Report
-createAppDT <- function(path) {
+createAppDT <- function(path, valid.dt) {
   current.run <- readSeqWareTSV(path)
-  current.run <- fixSeqWareTSV(current.run)
+  current.run <- fixSeqWareTSV(current.run, valid.dt)
   return(current.run)
-}
-
-loadValidFields <- function() {
-  valid_fields <- fread(normalizePath(CONFIG.VALID.FIELD))
-  return(valid_fields)
 }
 
 generateRunReportURL <- function(run_alias) {

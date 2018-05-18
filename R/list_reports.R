@@ -10,7 +10,7 @@ listRunReports <- function(base_dir) {
 
   path <- list.files(full_path, pattern = ".*\\.tsv$", full.names = TRUE, recursive = TRUE)
   file <- basename(path)
-  name <- str_match(file, "(.*?)_report.tsv")[, 2]
+  name <- stringr::str_match(file, "(.*?)_report.tsv")[, 2]
   dt <- data.table(path = path,
                    dir_path = dirname(path),
                    file = file,

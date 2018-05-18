@@ -1,8 +1,6 @@
-#' @import shinydashboard
-#' @import shiny
-#' @import V8
-#' @import shinyjs
-
+#' The ui object to pass to \link[shiny]{shinyApp}
+#'
+#' @export
 createAcquacottaUI <- function() {
   dashboardPage(
     dashboardHeader(
