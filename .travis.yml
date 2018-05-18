@@ -17,7 +17,7 @@ addons:
 
 sudo: false
 
-warnings_are_errors: false
+# warnings_are_errors: false
 
 after_success:
     - Rscript -e 'devtools::install();devtools::test()'
