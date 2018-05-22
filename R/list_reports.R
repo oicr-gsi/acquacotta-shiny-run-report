@@ -16,11 +16,6 @@ listRunReports <- function(base_dir) {
                    file = file,
                    name = name)
 
-  # This is temporary code to exclude the TSV files in the base directory from eariler app version
-  valid_dir <- list.dirs(path = full_path, full.names = TRUE)
-  valid_dir <- valid_dir[2:length(valid_dir)]
-  dt <- dt[dt$dir_path %in% valid_dir, ]
-
   # If two or more TSV files share the same name, their parent folder name is prepanded to remove ambiguity
   dup_name <- duplicated(dt$name) | duplicated(dt$name, fromLast = TRUE)
   unambiguous_name <- paste(
