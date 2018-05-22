@@ -1,0 +1,23 @@
+dist: trusty
+
+language: r
+
+cache: packages
+
+r: 3.3.3
+
+r_binary_packages:
+    - devtools
+    - roxygen2
+
+addons:
+    apt:
+        packages:
+            - libv8-3.14-dev # For V8, which is required by ShinyJS
+
+sudo: false
+
+# warnings_are_errors: false
+
+after_success:
+    - Rscript -e 'devtools::install();devtools::test()'
