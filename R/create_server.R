@@ -212,7 +212,15 @@ createAcquacottaServer <- function(config = createConfig()) {
             # This string is used by event_data to register user interactions with the plot
             # This string is used by shinyjs to reset a click event, so that the user can click on the same plot element twice
             source = config$plotly_id_lib_source,
-            marker = list(line = list(color = 'rgb(0,0,0)', width = line_width))
+            marker = list(line = list(color = 'rgb(0,0,0)', width = line_width)),
+            # Hovertext showing metadata for library
+            text = ~paste(
+              'Lane: ', Lane,
+              '</br>Study: ', Study,
+              '</br>Barcode: ', Barcode,
+              '</br>Group ID: ', `Group ID`,
+              '</br>External Name: ', `External Name`
+            )
           ) %>%
           add_bars(
             y = ~ Value,
