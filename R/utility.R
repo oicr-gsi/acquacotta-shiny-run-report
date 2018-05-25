@@ -95,6 +95,16 @@ fixSeqWareTSV <- function(t.df, valid.dt) {
     paste(result.dt$Library, result.dt$Lane, result.dt$Barcode, sep = "_")
   )
 
+  # Add any missing columns as all NA (Columns from the valid.dt starting with # are ignored, as it is a flag to split column)
+  missing.columns <- setdiff(valid.dt$app.name, colnames(result.dt))
+  remove.flag.columns <- grepl('^[^#]', missing.columns) # Columns that do not start with flag
+  missing.columns <- missing.columns[remove.flag.columns]
+
+  if(!identical(missing.columns, character(0))) {
+    # https://stackoverflow.com/questions/11745169/dynamic-column-names-in-data-table
+    result.dt[, (missing.columns) := NA]
+  }
+
   return(result.dt)
 }
 
