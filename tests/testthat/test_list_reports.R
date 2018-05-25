@@ -1,6 +1,3 @@
-library(testthat)
-library(acquacotta)
-
 context("Loading Run Report files")
 
 test_that("Loading of clean data", {

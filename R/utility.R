@@ -178,7 +178,11 @@ readSeqWareTSV <- function(path) {
     # The next valid call to fread will fail again, as the function has to reset itself. The next valid call will work fine.
     # I am manually making a valid call to fread to reset it
     # Issue is at https://github.com/Rdatatable/data.table/issues/2904
-    fread("echo bug, fix")
+    tryCatch({
+      fread("echo bug, fix")
+    }, warning = function(w) {
+      # Squash the warning message produced by resetting fread
+    })
 
     stop(conditionMessage(w))
   })
