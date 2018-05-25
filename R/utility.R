@@ -174,6 +174,12 @@ readSeqWareTSV <- function(path) {
     set(dt, j = "Run Name", value = factor(rep(path, nrow(dt))))
 
   }, warning = function(w) {
+    # This is a crutch to fix a bug in data.table. If fread causes a warning, it is caught, but the function is left in a failed state.
+    # The next valid call to fread will fail again, as the function has to reset itself. The next valid call will work fine.
+    # I am manually making a valid call to fread to reset it
+    # Issue is at https://github.com/Rdatatable/data.table/issues/2904
+    fread("echo bug, fix")
+
     stop(conditionMessage(w))
   })
 }
